@@ -1,13 +1,13 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { AppRouter } from "../components/AppRouter";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "SICUA - Sistema de Inventario y Control de Ventas" },
+    { name: "description", content: "Sistema completo para gestión de inventario y ventas" },
   ];
 }
 
 export default function Home() {
-  return <Welcome />;
+  return <AppRouter />;
 }

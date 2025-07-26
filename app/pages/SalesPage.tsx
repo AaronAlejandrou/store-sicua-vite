@@ -149,11 +149,11 @@ export function SalesPage() {
     const total = saleData ? saleData.total : subtotal;
     
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm max-w-md mx-auto">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-sm max-w-md mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">BOLETA DE VENTA</h2>
+          <h2 className="text-xl font-bold text-white mb-2">BOLETA DE VENTA</h2>
           {config && (
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-gray-300 space-y-1">
               <div className="font-semibold">{config.name}</div>
               <div>{config.address}</div>
               <div>{config.email} | {config.phone}</div>
@@ -163,50 +163,50 @@ export function SalesPage() {
         
         <div className="space-y-2 mb-4 text-sm">
           <div className="flex justify-between">
-            <span className="font-medium">Cliente:</span>
-            <span>{data.clientName || '-'}</span>
+            <span className="font-medium text-gray-300">Cliente:</span>
+            <span className="text-white">{data.clientName || '-'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">DNI:</span>
-            <span>{data.clientDni || '-'}</span>
+            <span className="font-medium text-gray-300">DNI:</span>
+            <span className="text-white">{data.clientDni || '-'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Fecha:</span>
-            <span>{new Date(data.date).toLocaleString()}</span>
+            <span className="font-medium text-gray-300">Fecha:</span>
+            <span className="text-white">{new Date(data.date).toLocaleString()}</span>
           </div>
         </div>
         
-        <div className="border-t border-gray-200 pt-4 mb-4">
+        <div className="border-t border-gray-600 pt-4 mb-4">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2">Producto</th>
-                <th className="text-right py-2">Precio</th>
-                <th className="text-center py-2">Cant.</th>
-                <th className="text-right py-2">Subtotal</th>
+              <tr className="border-b border-gray-600">
+                <th className="text-left py-2 text-gray-300">Producto</th>
+                <th className="text-right py-2 text-gray-300">Precio</th>
+                <th className="text-center py-2 text-gray-300">Cant.</th>
+                <th className="text-right py-2 text-gray-300">Subtotal</th>
               </tr>
             </thead>
             <tbody>
                              {(data.items || items).map((it, index) => (
-                 <tr key={it.productId || index} className="border-b border-gray-100">
-                   <td className="py-2 text-gray-900">{it.name}</td>
-                   <td className="py-2 text-right">S/ {parseFloat(it.price.toString()).toFixed(2)}</td>
-                   <td className="py-2 text-center">{it.quantity}</td>
-                   <td className="py-2 text-right font-medium">S/ {(parseFloat(it.price.toString()) * parseInt(it.quantity.toString())).toFixed(2)}</td>
+                 <tr key={it.productId || index} className="border-b border-gray-700">
+                   <td className="py-2 text-white">{it.name}</td>
+                   <td className="py-2 text-right text-white">S/ {parseFloat(it.price.toString()).toFixed(2)}</td>
+                   <td className="py-2 text-center text-white">{it.quantity}</td>
+                   <td className="py-2 text-right font-medium text-white">S/ {(parseFloat(it.price.toString()) * parseInt(it.quantity.toString())).toFixed(2)}</td>
                  </tr>
                ))}
             </tbody>
           </table>
         </div>
         
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-gray-600 pt-4">
           <div className="flex justify-between text-lg font-bold">
-            <span>TOTAL:</span>
-            <span>S/ {total.toFixed(2)}</span>
+            <span className="text-gray-300">TOTAL:</span>
+            <span className="text-white">S/ {total.toFixed(2)}</span>
           </div>
         </div>
         
-        <div className="text-center mt-6 text-sm text-gray-600">
+        <div className="text-center mt-6 text-sm text-gray-400">
           <p>¡Gracias por su compra!</p>
           <p>Conserve esta boleta</p>
         </div>
@@ -219,10 +219,10 @@ export function SalesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-white">
             Nueva Venta
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-400">
             Genera boletas y registra ventas
           </p>
         </div>
@@ -239,7 +239,7 @@ export function SalesPage() {
       </div>
 
       {/* Main Form */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div className="bg-gray-800 rounded-lg shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Client Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -271,10 +271,10 @@ export function SalesPage() {
             {showDropdown && (
               <div 
                 ref={dropdownRef}
-                className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
               >
                 {sugerencias.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  <div className="p-4 text-center text-gray-400">
                     No se encontraron productos
                   </div>
                 ) : (
@@ -282,13 +282,13 @@ export function SalesPage() {
                     <div
                       key={prod.productId}
                       onClick={() => handleAgregarSugerido(prod)}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
+                      className="flex items-center justify-between p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900 dark:text-white">{prod.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">ID: {prod.productId}</div>
+                        <div className="font-medium text-white">{prod.name}</div>
+                        <div className="text-sm text-gray-400">ID: {prod.productId}</div>
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 ml-4">
+                      <div className="text-sm text-gray-400 ml-4">
                         <div>Stock: <span className="font-medium">{prod.quantity}</span></div>
                         <div>S/ {prod.price.toFixed(2)}</div>
                       </div>
@@ -307,23 +307,23 @@ export function SalesPage() {
 
           {/* Items Table */}
           {items.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Productos en la Venta</h3>
+            <div className="bg-gray-700 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-white mb-4">Productos en la Venta</h3>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                  <thead className="bg-gray-100 dark:bg-gray-600">
+                <table className="min-w-full divide-y divide-gray-600">
+                  <thead className="bg-gray-600">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Producto</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Precio Unit.</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Cantidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Subtotal</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Producto</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Precio Unit.</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Cantidad</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Subtotal</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                  <tbody className="bg-gray-700 divide-y divide-gray-600">
                     {items.map((it, idx) => (
                       <tr key={it.productId}>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{it.name}</td>
+                        <td className="px-4 py-3 text-sm text-white">{it.name}</td>
                         <td className="px-4 py-3">
                           <Input
                             type="number"
@@ -344,7 +344,7 @@ export function SalesPage() {
                             className="w-20"
                           />
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                        <td className="px-4 py-3 text-sm font-medium text-white">
                           S/ {(parseFloat(it.ventaPrice.toString()) * parseInt(it.ventaQty.toString())).toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
@@ -363,7 +363,7 @@ export function SalesPage() {
               </div>
               
               <div className="mt-4 text-right">
-                <div className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="text-lg font-bold text-white">
                   Total: S/ {subtotal.toFixed(2)}
                 </div>
               </div>

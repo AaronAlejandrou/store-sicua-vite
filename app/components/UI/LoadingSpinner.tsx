@@ -35,7 +35,7 @@ export function LoadingSpinner({ size = 'md', text, className = '' }: LoadingSpi
         />
       </svg>
       {text && (
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-2 text-sm text-gray-400">
           {text}
         </p>
       )}

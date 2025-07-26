@@ -100,17 +100,17 @@ export function ConfigPage({ onConfigured }: ConfigPageProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-3xl font-bold text-white mb-2">
           Configuración de la Tienda
         </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        <p className="text-lg text-gray-400 max-w-2xl mx-auto">
           Configura los datos básicos de tu tienda. Esta información aparecerá en las boletas de venta.
         </p>
       </div>
 
       {/* Configuration Form */}
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
+        <div className="bg-gray-800 rounded-lg shadow-sm p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Store Name */}
             <div>
@@ -212,22 +212,22 @@ export function ConfigPage({ onConfigured }: ConfigPageProps) {
 
         {/* Preview Section */}
         {formData.name && (
-          <div className="mt-8 bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="mt-8 bg-gray-700 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">
               Vista Previa de la Boleta
             </h3>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
               <div className="text-center mb-4">
-                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                <h4 className="text-lg font-bold text-white mb-2">
                   BOLETA DE VENTA
                 </h4>
-                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <div className="text-sm text-gray-400 space-y-1">
                   <div className="font-semibold">{formData.name}</div>
                   <div>{formData.address}</div>
                   <div>{formData.email} | {formData.phone}</div>
                 </div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              <div className="text-xs text-gray-400 text-center">
                 Esta es una vista previa de cómo aparecerá la información en las boletas
               </div>
             </div>

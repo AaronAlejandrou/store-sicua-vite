@@ -21,7 +21,7 @@ export function MainLayout({ children, currentPage, onPageChange }: MainLayoutPr
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
       <Sidebar currentPage={currentPage} onPageChange={handlePageChange} />
       
@@ -34,7 +34,7 @@ export function MainLayout({ children, currentPage, onPageChange }: MainLayoutPr
       )}
       
       {/* Mobile sidebar */}
-      <div className={`fixed left-0 top-0 z-40 h-screen w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out dark:bg-gray-800 lg:hidden ${
+      <div className={`fixed left-0 top-0 z-40 h-screen w-64 transform bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out lg:hidden ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <Sidebar currentPage={currentPage} onPageChange={handlePageChange} />

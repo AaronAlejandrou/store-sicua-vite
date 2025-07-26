@@ -45,16 +45,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       />
       
       {/* Modal */}
-      <div className={`relative w-full ${sizeClasses[size]} mx-4 transform rounded-lg bg-white shadow-xl transition-all dark:bg-gray-800`}>
+      <div className={`relative w-full ${sizeClasses[size]} mx-4 transform rounded-lg bg-gray-800 shadow-xl transition-all`}>
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="flex items-center justify-between border-b border-gray-700 px-6 py-4">
+            <h3 className="text-lg font-semibold text-white">
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+              className="rounded-lg p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-300"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

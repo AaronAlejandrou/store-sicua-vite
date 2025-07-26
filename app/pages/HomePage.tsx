@@ -98,7 +98,7 @@ export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
       <div className="text-center py-12">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        <h1 className="text-4xl font-bold text-white mb-4">
           Bienvenido a SICUA
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -143,7 +143,7 @@ export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
 
         {/* Quick Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,15 +151,15 @@ export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productos</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-400">Productos</p>
+                <p className="text-2xl font-semibold text-white">
                   {isLoading ? '...' : stats.totalProducts}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                 <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,15 +167,15 @@ export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ventas Hoy</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-400">Ventas Hoy</p>
+                <p className="text-2xl font-semibold text-white">
                   {isLoading ? '...' : stats.todaySales}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,8 +183,8 @@ export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingresos Hoy</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-400">Ingresos Hoy</p>
+                <p className="text-2xl font-semibold text-white">
                   {isLoading ? '...' : `S/ ${stats.todayRevenue.toFixed(2)}`}
                 </p>
               </div>

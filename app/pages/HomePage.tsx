@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAppContext } from '../context/AppContext';
+import type { Product } from '../domain/entities/Product';
+import type { Sale } from '../domain/entities/Sale';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
+  refreshKey?: number; // Add refresh key to force re-render
+}
+
+interface Stats {
+  totalProducts: number;
+  todaySales: number;
+  todayRevenue: number;
 }
 
 const NAVIGATION_CARDS = [
@@ -39,7 +49,51 @@ const NAVIGATION_CARDS = [
   }
 ];
 
-export function HomePage({ onNavigate }: HomePageProps) {
+export function HomePage({ onNavigate, refreshKey }: HomePageProps) {
+  const { productRepo, saleRepo } = useAppContext();
+  const [stats, setStats] = useState<Stats>({
+    totalProducts: 0,
+    todaySales: 0,
+    todayRevenue: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get all products
+        const products = await productRepo.getAll();
+        const totalProducts = products.length;
+        
+        // Get all sales
+        const sales = await saleRepo.getAll();
+        
+        // Filter today's sales
+        const today = new Date().toDateString();
+        const todaySales = sales.filter((sale: Sale) => {
+          const saleDate = new Date(sale.date).toDateString();
+          return saleDate === today;
+        });
+        
+        // Calculate today's revenue
+        const todayRevenue = todaySales.reduce((total: number, sale: Sale) => total + sale.total, 0);
+        
+        setStats({
+          totalProducts,
+          todaySales: todaySales.length,
+          todayRevenue
+        });
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [productRepo, saleRepo, refreshKey]); // Add refreshKey to dependencies
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
@@ -98,7 +152,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productos</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : stats.totalProducts}
+                </p>
               </div>
             </div>
           </div>
@@ -112,7 +168,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ventas Hoy</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : stats.todaySales}
+                </p>
               </div>
             </div>
           </div>
@@ -125,8 +183,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingresos</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white">S/ 0.00</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingresos Hoy</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : `S/ ${stats.todayRevenue.toFixed(2)}`}
+                </p>
               </div>
             </div>
           </div>

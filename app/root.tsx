@@ -1,7 +1,5 @@
 import {
-  isRouteErrorResponse,
   Links,
-  Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -30,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
+        <title>SICUA - Sistema de Inventario y Control de Ventas</title>
         <Links />
       </head>
       <body>
@@ -55,12 +53,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let details = "Ha ocurrido un error inesperado.";
   let stack: string | undefined;
 
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+  if (error && typeof error === 'object' && 'status' in error) {
+    const routeError = error as { status: number; statusText?: string };
+    message = routeError.status === 404 ? "404" : "Error";
     details =
-      error.status === 404
+      routeError.status === 404
         ? "La página solicitada no se pudo encontrar."
-        : error.statusText || details;
+        : routeError.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;

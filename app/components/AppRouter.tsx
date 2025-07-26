@@ -13,6 +13,7 @@ export function AppRouter() {
   const [config, setConfig] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -43,6 +44,11 @@ export function AppRouter() {
 
   const handlePageChange = (pageKey: string) => {
     setCurrentPage(pageKey);
+    
+    // Refresh home page stats when navigating back to home
+    if (pageKey === 'home') {
+      setRefreshKey(prev => prev + 1);
+    }
   };
 
   const handleConfigComplete = () => {
@@ -64,7 +70,7 @@ export function AppRouter() {
 
   return (
     <MainLayout currentPage={currentPage} onPageChange={handlePageChange}>
-      {currentPage === 'home' && <HomePage onNavigate={handlePageChange} />}
+      {currentPage === 'home' && <HomePage key={refreshKey} onNavigate={handlePageChange} refreshKey={refreshKey} />}
       {currentPage === 'inventario' && <InventoryPage />}
       {currentPage === 'ventas' && <SalesPage />}
       {currentPage === 'historial' && <HistoryPage />}

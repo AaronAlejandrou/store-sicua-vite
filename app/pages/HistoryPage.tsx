@@ -13,7 +13,7 @@ export function HistoryPage() {
   const [filtro, setFiltro] = useState('todas');
   const [ventaSel, setVentaSel] = useState<Sale | null>(null);
   const [config, setConfig] = useState<StoreConfig | null>(null);
-  const { downloadRef, handleDownloadPDF } = useDownloadPDF();
+  const { downloadRef, handleDownloadPDF, generatePDFFromData } = useDownloadPDF();
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -275,7 +275,7 @@ export function HistoryPage() {
           </div>
         )}
         <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={handleDownloadPDF}>
+          <Button variant="outline" onClick={() => ventaSel && generatePDFFromData(ventaSel, config)}>
             Descargar PDF
           </Button>
         </div>

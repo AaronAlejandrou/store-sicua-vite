@@ -28,7 +28,7 @@ export function SalesPage() {
   const [config, setConfig] = useState<StoreConfig | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { downloadRef, handleDownloadPDF } = useDownloadPDF();
+  const { downloadRef, handleDownloadPDF, generatePDFFromData } = useDownloadPDF();
   const [busquedaError, setBusquedaError] = useState('');
   const [lastSale, setLastSale] = useState<Sale | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -406,7 +406,7 @@ export function SalesPage() {
           {renderBoleta(lastSale)}
         </div>
         <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={handleDownloadPDF}>
+          <Button variant="outline" onClick={() => lastSale && generatePDFFromData(lastSale, config)}>
             Descargar PDF
           </Button>
         </div>

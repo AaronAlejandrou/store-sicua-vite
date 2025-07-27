@@ -6,9 +6,10 @@ interface MainLayoutProps {
   children: React.ReactNode;
   currentPage: string;
   onPageChange: (page: string) => void;
+  onLogout?: () => void;
 }
 
-export function MainLayout({ children, currentPage, onPageChange }: MainLayoutProps) {
+export function MainLayout({ children, currentPage, onPageChange, onLogout }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleToggleSidebar = () => {
@@ -23,7 +24,7 @@ export function MainLayout({ children, currentPage, onPageChange }: MainLayoutPr
   return (
     <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
-      <Sidebar currentPage={currentPage} onPageChange={handlePageChange} />
+      <Sidebar currentPage={currentPage} onPageChange={handlePageChange} onLogout={onLogout} />
       
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (

@@ -6,6 +6,8 @@ import { InventoryPage } from '../pages/InventoryPage';
 import { SalesPage } from '../pages/SalesPage';
 import { HistoryPage } from '../pages/HistoryPage';
 import { ConfigPage } from '../pages/ConfigPage';
+import { LoginPage } from '../pages/LoginPage';
+import { RegisterPage } from '../pages/RegisterPage';
 import { LoadingSpinner } from './UI/LoadingSpinner';
 
 export function AppRouter() {
@@ -14,41 +16,39 @@ export function AppRouter() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
-    const loadConfig = async () => {
+    const checkAuthAndLoadConfig = async () => {
       try {
-        console.log('Loading store configuration...');
-        const storeConfig = await configRepo.get();
-        console.log('Store config loaded:', storeConfig);
+        console.log('Checking authentication status...');
         
-        // Check if it's the default configuration
-        const isDefaultConfig = storeConfig && (
-          storeConfig.name === 'SICUA Store' || 
-          storeConfig.address === 'Default Address' || 
-          storeConfig.email === 'contact@sicua.com' ||
-          storeConfig.phone === '000-000-0000'
-        );
+        // Check if user is authenticated
+        const authResponse = await fetch('/api/auth/status');
+        const isAuth = authResponse.ok;
         
-        setConfig(storeConfig);
+        console.log('Authentication status:', isAuth);
+        setIsAuthenticated(isAuth);
         
-        // If no configuration or default configuration, go to configuration page
-        if (!storeConfig || isDefaultConfig) {
-          console.log('No configuration or default configuration found, redirecting to config page');
-          setCurrentPage('config');
-        } else {
-          console.log('Custom configuration found, staying on home page');
+        if (isAuth) {
+          // User is authenticated, load store config
+          console.log('Loading store configuration...');
+          const storeConfig = await configRepo.get();
+          console.log('Store config loaded:', storeConfig);
+          setConfig(storeConfig);
         }
+        
       } catch (error) {
-        console.error('Error loading configuration:', error);
-        setCurrentPage('config');
+        console.error('Error checking auth or loading configuration:', error);
+        setIsAuthenticated(false);
       } finally {
-        console.log('Finished loading configuration, setting isLoading to false');
+        console.log('Finished loading, setting isLoading to false');
         setIsLoading(false);
       }
     };
 
-    loadConfig();
+    checkAuthAndLoadConfig();
   }, [configRepo]);
 
   const handlePageChange = (pageKey: string) => {
@@ -58,6 +58,22 @@ export function AppRouter() {
     if (pageKey === 'home') {
       setRefreshKey(prev => prev + 1);
     }
+  };
+
+  const handleAuthenticated = () => {
+    setIsAuthenticated(true);
+    window.location.reload(); // Reload to load the store configuration
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+    setIsAuthenticated(false);
+    setConfig(null);
+    setCurrentPage('home');
   };
 
   const handleConfigComplete = () => {
@@ -72,20 +88,26 @@ export function AppRouter() {
     );
   }
 
-  // If no configuration or default configuration, show configuration page
-  const isDefaultConfig = config && (
-    config.name === 'SICUA Store' || 
-    config.address === 'Default Address' || 
-    config.email === 'contact@sicua.com' ||
-    config.phone === '000-000-0000'
-  );
+  // If not authenticated, show login/register
+  if (!isAuthenticated) {
+    return showRegister ? 
+      <RegisterPage 
+        onRegistered={handleAuthenticated} 
+        onSwitchToLogin={() => setShowRegister(false)}
+      /> :
+      <LoginPage 
+        onAuthenticated={handleAuthenticated} 
+        onSwitchToRegister={() => setShowRegister(true)}
+      />;
+  }
 
-  if (!config || isDefaultConfig) {
+  // If authenticated but no valid config, show config page
+  if (!config) {
     return <ConfigPage onConfigured={handleConfigComplete} />;
   }
 
   return (
-    <MainLayout currentPage={currentPage} onPageChange={handlePageChange}>
+    <MainLayout currentPage={currentPage} onPageChange={handlePageChange} onLogout={handleLogout}>
       {currentPage === 'home' && <HomePage key={refreshKey} onNavigate={handlePageChange} refreshKey={refreshKey} />}
       {currentPage === 'inventario' && <InventoryPage />}
       {currentPage === 'ventas' && <SalesPage />}

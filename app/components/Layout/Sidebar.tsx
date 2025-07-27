@@ -3,6 +3,7 @@ import React from 'react';
 interface SidebarProps {
   currentPage: string;
   onPageChange: (page: string) => void;
+  onLogout?: () => void;
 }
 
 const NAVIGATION_ITEMS = [
@@ -13,7 +14,7 @@ const NAVIGATION_ITEMS = [
   { key: 'config', label: 'Configuración', icon: '⚙️' },
 ];
 
-export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+export function Sidebar({ currentPage, onPageChange, onLogout }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 -translate-x-full transform bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0">
       <div className="flex h-full flex-col">
@@ -42,7 +43,17 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         </nav>
         
         {/* Footer */}
-        <div className="border-t border-gray-700 p-4">
+        <div className="border-t border-gray-700 p-4 space-y-2">
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-all duration-200"
+              title="Cerrar Sesión"
+            >
+              <span className="text-lg">🚪</span>
+              <span className="truncate">Cerrar Sesión</span>
+            </button>
+          )}
           <div className="text-xs text-gray-400">
             Sistema de Inventario y Control de Ventas
           </div>

@@ -28,7 +28,8 @@ export class InventoryService {
       name: product.name,
       category: product.category,
       price: product.price,
-      quantity: product.quantity - quantity
+      quantity: product.quantity - quantity,
+      brand: product.brand
     };
     
     await this.productRepository.update(productId, updatedData);

@@ -20,7 +20,8 @@ export class SaleService {
         name: product.name,
         category: product.category,
         price: product.price,
-        quantity: product.quantity - item.quantity
+        quantity: product.quantity - item.quantity,
+        brand: product.brand
       };
       
       await this.productRepository.update(item.productId, updatedProductData);

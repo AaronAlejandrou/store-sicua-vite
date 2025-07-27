@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useDownloadPDF } from '../infrastructure/printing/PrintAdapter';
+import { generateReceiptPDF } from '../infrastructure/printing/PrintAdapter';
 import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
 import { Modal } from '../components/UI/Modal';
@@ -8,10 +8,7 @@ import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import type { Product } from '../domain/entities/Product';
 import type { Sale, SaleItem } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
-
-function uuid() {
-  return '_' + Math.random().toString(36).substr(2, 9);
-}
+import type { CreateSaleRequest } from '../domain/repositories/SaleRepository';
 
 interface SaleItemWithVenta extends Product {
   ventaPrice: number;
@@ -19,7 +16,7 @@ interface SaleItemWithVenta extends Product {
 }
 
 export function SalesPage() {
-  const { productRepo, makeSale, configRepo } = useAppContext();
+  const { productRepo, saleRepo, configRepo } = useAppContext();
   const [productos, setProductos] = useState<Product[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -28,15 +25,29 @@ export function SalesPage() {
   const [config, setConfig] = useState<StoreConfig | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { downloadRef, handleDownloadPDF, generatePDFFromData } = useDownloadPDF();
   const [busquedaError, setBusquedaError] = useState('');
   const [lastSale, setLastSale] = useState<Sale | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Función simple para formatear fecha sin cache
+  const formatSaleDate = useCallback((dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date string:', dateString);
+        return 'Fecha inválida';
+      }
+      return date.toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error, dateString);
+      return 'Error en fecha';
+    }
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
+      setIsLoading(true);
       const [allProducts, storeConfig] = await Promise.all([
         productRepo.getAll(),
         configRepo.get()
@@ -45,53 +56,75 @@ export function SalesPage() {
       setConfig(storeConfig);
     } catch (error) {
       console.error('Error cargando datos:', error);
+      setError('Error al cargar los datos');
+    } finally {
+      setIsLoading(false);
     }
   }, [productRepo, configRepo]);
 
-  useEffect(() => { 
-    cargar(); 
+  useEffect(() => {
+    cargar();
   }, [cargar]);
 
-  // Filtered suggestions
-  const sugerencias = busqueda.trim().length > 0
-    ? productos.filter(p =>
-        p.productId.toLowerCase().includes(busqueda.trim().toLowerCase()) ||
-        p.name.toLowerCase().includes(busqueda.trim().toLowerCase())
-      ).filter(p => !items.find(i => i.productId === p.productId))
-    : [];
-
-  // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
         setShowDropdown(false);
       }
-    }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputFocus = () => {
-    setShowDropdown(true);
-    setBusquedaError('');
-  };
+  // Filtrar productos: priorizar búsqueda por ID, luego por nombre
+  const productosVistas = productos.filter(p => {
+    if (!busqueda.trim()) return false;
+    if (p.quantity <= 0) return false;
+    
+    const searchTerm = busqueda.toLowerCase().trim();
+    
+    // Priorizar búsqueda por ID (exacta o que comience con el término)
+    if (p.productId.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+    
+    // Luego por nombre
+    if (p.name.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+    
+    // También por marca si existe
+    if (p.brand && p.brand.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+    
+    return false;
+  }).sort((a, b) => {
+    // Ordenar: primero los que coinciden exactamente con el ID, luego por nombre
+    const searchTerm = busqueda.toLowerCase().trim();
+    const aIdMatch = a.productId.toLowerCase().startsWith(searchTerm);
+    const bIdMatch = b.productId.toLowerCase().startsWith(searchTerm);
+    
+    if (aIdMatch && !bIdMatch) return -1;
+    if (!aIdMatch && bIdMatch) return 1;
+    
+    return a.name.localeCompare(b.name);
+  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBusqueda(e.target.value);
-    setShowDropdown(true);
-    setBusquedaError('');
-  };
-
-  const handleAgregarSugerido = (prod: Product) => {
-    setItems([...items, {
-      ...prod,
-      ventaPrice: prod.price,
-      ventaQty: 1
+  const agregarItem = (producto: Product) => {
+    const existe = items.find(it => it.productId === producto.productId);
+    if (existe) {
+      setBusquedaError('Este producto ya fue agregado');
+      setTimeout(() => setBusquedaError(''), 3000);
+      return;
+    }
+    
+    setItems([...items, { 
+      ...producto, 
+      ventaPrice: producto.price, 
+      ventaQty: 1 
     }]);
     setBusqueda('');
     setShowDropdown(false);
@@ -110,34 +143,44 @@ export function SalesPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
     try {
       if (!items.length) throw new Error('Agregue al menos un producto');
+      
+      if (!cliente.name.trim()) throw new Error('El nombre del cliente es obligatorio');
+      
       for (const it of items) {
-        if (parseInt(it.ventaQty.toString()) > it.quantity) throw new Error(`Stock insuficiente para ${it.name}`);
+        if (parseInt(it.ventaQty.toString()) > it.quantity) {
+          throw new Error(`Stock insuficiente para ${it.name}. Disponible: ${it.quantity}, Solicitado: ${it.ventaQty}`);
+        }
       }
-      const sale: Sale = {
-        id: uuid(),
-        clientDni: cliente.dni,
-        clientName: cliente.name,
-        date: new Date().toISOString(),
+
+      const saleData: CreateSaleRequest = {
+        clientDni: cliente.dni.trim() || 'N/A',
+        clientName: cliente.name.trim(),
         items: items.map(it => ({
           productId: it.productId,
           name: it.name,
           price: parseFloat(it.ventaPrice.toString()),
           quantity: parseInt(it.ventaQty.toString()),
           subtotal: parseFloat(it.ventaPrice.toString()) * parseInt(it.ventaQty.toString())
-        })),
-        total: subtotal,
-        invoiced: false
+        }))
       };
-      await makeSale(sale);
-      setLastSale(sale);
-      setSuccess('Venta registrada y boleta guardada.');
+
+      console.log('Creating sale with data:', saleData);
+
+      // Usar el repositorio directamente
+      const newSale = await saleRepo.create(saleData);
+      console.log('Sale created:', newSale);
+      
+      setLastSale(newSale);
+      setSuccess('Venta registrada exitosamente.');
       setItems([]);
       setCliente({ dni: '', name: '' });
-      cargar();
+      cargar(); // Reload products to update stock
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error creating sale:', err);
+      setError(err.message || 'Error al registrar la venta');
     }
   };
 
@@ -145,272 +188,313 @@ export function SalesPage() {
   const closePrintModal = () => setShowPrintModal(false);
 
   const renderBoleta = (saleData: Sale | null) => {
-    const data = saleData || { items: [], clientName: '', clientDni: '', date: new Date().toISOString() };
-    const total = saleData ? saleData.total : subtotal;
+    // Si no hay datos de venta, usar los items actuales para la vista previa
+    const displayItems = saleData ? saleData.items : items.map(item => ({
+      productId: item.productId,
+      name: item.name,
+      price: item.ventaPrice,
+      quantity: item.ventaQty,
+      subtotal: item.ventaPrice * item.ventaQty
+    }));
+    
+    const displayTotal = saleData ? saleData.total : subtotal;
+    const displayClient = saleData ? saleData.clientName : cliente.name;
+    const displayDni = saleData ? saleData.clientDni : cliente.dni;
+    
+    // Para la fecha: usar la fecha formateada directamente si hay saleData, sino fecha actual para vista previa
+    const displayDate = saleData 
+      ? formatSaleDate(saleData.date)
+      : new Date().toLocaleString();
     
     return (
-      <div className="bg-gray-800 p-6 rounded-lg shadow-sm max-w-md mx-auto">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white mb-2">BOLETA DE VENTA</h2>
-          {config && (
-            <div className="text-sm text-gray-300 space-y-1">
-              <div className="font-semibold">{config.name}</div>
-              <div>{config.address}</div>
-              <div>{config.email} | {config.phone}</div>
-            </div>
-          )}
+      <div className="bg-white p-6 max-w-md mx-auto text-gray-900">
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-bold">{config?.name || 'Tu Tienda'}</h2>
+          <p className="text-sm">{config?.address || 'Dirección'}</p>
+          <p className="text-sm">Tel: {config?.phone || 'Teléfono'}</p>
+          <p className="text-sm">Email: {config?.email || 'Email'}</p>
         </div>
         
-        <div className="space-y-2 mb-4 text-sm">
-          <div className="flex justify-between">
-            <span className="font-medium text-gray-300">Cliente:</span>
-            <span className="text-white">{data.clientName || '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium text-gray-300">DNI:</span>
-            <span className="text-white">{data.clientDni || '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium text-gray-300">Fecha:</span>
-            <span className="text-white">{new Date(data.date).toLocaleString()}</span>
-          </div>
+        <div className="border-t border-b py-2 mb-4">
+          <p className="text-sm">Cliente: {displayClient || 'N/A'}</p>
+          <p className="text-sm">DNI: {displayDni || 'N/A'}</p>
+          <p className="text-sm">Fecha: {displayDate}</p>
         </div>
-        
-        <div className="border-t border-gray-600 pt-4 mb-4">
+
+        <div className="mb-4">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-600">
-                <th className="text-left py-2 text-gray-300">Producto</th>
-                <th className="text-right py-2 text-gray-300">Precio</th>
-                <th className="text-center py-2 text-gray-300">Cant.</th>
-                <th className="text-right py-2 text-gray-300">Subtotal</th>
+              <tr className="border-b">
+                <th className="text-left">Producto</th>
+                <th className="text-right">Cant.</th>
+                <th className="text-right">Precio</th>
+                <th className="text-right">Total</th>
               </tr>
             </thead>
             <tbody>
-                             {(data.items || items).map((it, index) => (
-                 <tr key={it.productId || index} className="border-b border-gray-700">
-                   <td className="py-2 text-white">{it.name}</td>
-                   <td className="py-2 text-right text-white">S/ {parseFloat(it.price.toString()).toFixed(2)}</td>
-                   <td className="py-2 text-center text-white">{it.quantity}</td>
-                   <td className="py-2 text-right font-medium text-white">S/ {(parseFloat(it.price.toString()) * parseInt(it.quantity.toString())).toFixed(2)}</td>
-                 </tr>
-               ))}
+              {displayItems.map((item, idx) => (
+                <tr key={idx}>
+                  <td className="text-left py-1">{item.name}</td>
+                  <td className="text-right">{item.quantity}</td>
+                  <td className="text-right">S/ {item.price.toFixed(2)}</td>
+                  <td className="text-right">S/ {item.subtotal.toFixed(2)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-        
-        <div className="border-t border-gray-600 pt-4">
-          <div className="flex justify-between text-lg font-bold">
-            <span className="text-gray-300">TOTAL:</span>
-            <span className="text-white">S/ {total.toFixed(2)}</span>
+
+        <div className="border-t pt-2">
+          <div className="flex justify-between font-bold">
+            <span>TOTAL:</span>
+            <span>S/ {displayTotal.toFixed(2)}</span>
           </div>
         </div>
-        
-        <div className="text-center mt-6 text-sm text-gray-400">
-          <p>¡Gracias por su compra!</p>
-          <p>Conserve esta boleta</p>
+
+        <div className="text-center mt-4 text-xs text-gray-500">
+          ¡Gracias por su compra!
         </div>
       </div>
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <LoadingSpinner size="lg" text="Cargando datos de venta..." />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">
-            Nueva Venta
-          </h2>
-          <p className="text-gray-400">
-            Genera boletas y registra ventas
-          </p>
-        </div>
-        <Button 
-          onClick={openPrintModal} 
-          disabled={!lastSale && items.length === 0}
-          variant="outline"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-          </svg>
-          Imprimir Última Boleta
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva Venta</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Crea boletas y registra ventas
+        </p>
       </div>
 
-      {/* Main Form */}
-      <div className="bg-gray-800 rounded-lg shadow-sm p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Client Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="DNI Cliente (opcional)"
-              value={cliente.dni}
-              onChange={(e) => setCliente(c => ({ ...c, dni: e.target.value }))}
-              placeholder="Ej: 12345678"
-            />
-            <Input
-              label="Nombre Cliente (opcional)"
-              value={cliente.name}
-              onChange={(e) => setCliente(c => ({ ...c, name: e.target.value }))}
-              placeholder="Ej: Juan Pérez"
-            />
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column - Sale Form */}
+        <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Customer Info */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="DNI/RUC"
+                  value={cliente.dni}
+                  onChange={(e) => setCliente({...cliente, dni: e.target.value})}
+                  placeholder="Ingrese DNI o RUC (opcional)"
+                />
+                <Input
+                  label="Nombre *"
+                  value={cliente.name}
+                  onChange={(e) => setCliente({...cliente, name: e.target.value})}
+                  placeholder="Nombre del cliente"
+                  required
+                />
+              </div>
+            </div>
 
-          {/* Product Search */}
-          <div className="relative">
-            <Input
-              label="Buscar Producto"
-              value={busqueda}
-              onChange={handleInputChange}
-              onFocus={handleInputFocus}
-              placeholder="Buscar producto por ID o nombre"
-              helperText="Escribe para buscar productos disponibles"
-            />
-            
-            {showDropdown && (
-              <div 
-                ref={dropdownRef}
-                className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-              >
-                {sugerencias.length === 0 ? (
-                  <div className="p-4 text-center text-gray-400">
-                    No se encontraron productos
+            {/* Product Search */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Agregar Productos</h3>
+              <div className="relative dropdown-container">
+                <Input
+                  label="Buscar por ID o nombre"
+                  value={busqueda}
+                  onChange={(e) => {
+                    setBusqueda(e.target.value);
+                    setShowDropdown(e.target.value.length > 0);
+                    setBusquedaError('');
+                  }}
+                  placeholder="Ej: P001, CAM001, o nombre del producto..."
+                  onFocus={() => busqueda && setShowDropdown(true)}
+                  helperText="Busca principalmente por ID del producto para mayor precisión"
+                />
+                
+                {busquedaError && (
+                  <p className="text-red-500 text-sm mt-1">{busquedaError}</p>
+                )}
+
+                {showDropdown && productosVistas.length > 0 && (
+                  <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                    {productosVistas.slice(0, 8).map((producto) => (
+                      <div
+                        key={producto.productId}
+                        onClick={() => agregarItem(producto)}
+                        className="p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b last:border-b-0"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-blue-600 dark:text-blue-400">ID: {producto.productId}</p>
+                            <p className="font-medium">{producto.name}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {producto.brand && `${producto.brand} - `}{producto.category} - Stock: {producto.quantity}
+                            </p>
+                          </div>
+                          <span className="text-green-600 font-medium">
+                            S/ {producto.price.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {productosVistas.length > 8 && (
+                      <div className="p-2 text-center text-sm text-gray-500 dark:text-gray-400">
+                        ... y {productosVistas.length - 8} productos más
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  sugerencias.map(prod => (
-                    <div
-                      key={prod.productId}
-                      onClick={() => handleAgregarSugerido(prod)}
-                      className="flex items-center justify-between p-3 hover:bg-gray-600 cursor-pointer border-b border-gray-600 last:border-b-0"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-white">{prod.name}</div>
-                        <div className="text-sm text-gray-400">ID: {prod.productId}</div>
-                      </div>
-                      <div className="text-sm text-gray-400 ml-4">
-                        <div>Stock: <span className="font-medium">{prod.quantity}</span></div>
-                        <div>S/ {prod.price.toFixed(2)}</div>
-                      </div>
-                    </div>
-                  ))
+                )}
+
+                {showDropdown && busqueda && productosVistas.length === 0 && (
+                  <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 p-3 shadow-lg">
+                    <p className="text-gray-500 dark:text-gray-400 text-center">
+                      No se encontraron productos con "{busqueda}"
+                    </p>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-
-          {busquedaError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-600">{busquedaError}</p>
             </div>
-          )}
 
-          {/* Items Table */}
-          {items.length > 0 && (
-            <div className="bg-gray-700 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-white mb-4">Productos en la Venta</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-600">
-                  <thead className="bg-gray-600">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Producto</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Precio Unit.</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Cantidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Subtotal</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-700 divide-y divide-gray-600">
-                    {items.map((it, idx) => (
-                      <tr key={it.productId}>
-                        <td className="px-4 py-3 text-sm text-white">{it.name}</td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={it.ventaPrice}
-                            onChange={(e) => handleItemChange(idx, 'ventaPrice', parseFloat(e.target.value) || 0)}
-                            className="w-24"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            min="1"
-                            max={it.quantity}
-                            value={it.ventaQty}
-                            onChange={(e) => handleItemChange(idx, 'ventaQty', parseInt(e.target.value) || 1)}
-                            className="w-20"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-white">
-                          S/ {(parseFloat(it.ventaPrice.toString()) * parseInt(it.ventaQty.toString())).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => quitarItem(idx)}
-                          >
-                            Quitar
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-4 text-right">
-                <div className="text-lg font-bold text-white">
-                  Total: S/ {subtotal.toFixed(2)}
+            {/* Sale Items */}
+            {items.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Productos en la Venta</h3>
+                <div className="space-y-4">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{item.name}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          ID: {item.productId} | Stock disponible: {item.quantity}
+                        </p>
+                        {item.brand && (
+                          <p className="text-sm text-gray-500 dark:text-gray-500">
+                            Marca: {item.brand}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max={item.quantity}
+                          value={item.ventaQty}
+                          onChange={(e) => handleItemChange(idx, 'ventaQty', parseInt(e.target.value) || 1)}
+                          className="w-20"
+                        />
+                        <span className="text-sm">×</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={item.ventaPrice}
+                          onChange={(e) => handleItemChange(idx, 'ventaPrice', parseFloat(e.target.value) || 0)}
+                          className="w-24"
+                        />
+                        <span className="font-medium min-w-20 text-right">
+                          S/ {(item.ventaPrice * item.ventaQty).toFixed(2)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => quitarItem(idx)}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center text-lg font-bold">
+                      <span>Total:</span>
+                      <span className="text-green-600">S/ {subtotal.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Messages */}
-          {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-              <p className="text-sm text-green-600">{success}</p>
-            </div>
-          )}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                {error}
+              </div>
+            )}
 
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" disabled={items.length === 0}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Generar Boleta
-            </Button>
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
+                {success}
+                <div className="mt-2">
+                  <Button type="button" size="sm" onClick={openPrintModal}>
+                    Ver/Imprimir Boleta
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-4">
+              <Button
+                type="submit"
+                disabled={items.length === 0 || !cliente.name.trim()}
+                className="flex-1"
+              >
+                Registrar Venta
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={openPrintModal}
+                disabled={items.length === 0}
+              >
+                Vista Previa
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Right Column - Receipt Preview */}
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
+            <h3 className="text-lg font-semibold mb-4">Vista Previa de Boleta</h3>
+            <div className="border rounded-lg overflow-hidden">
+              {renderBoleta(null)}
+            </div>
           </div>
-        </form>
+        </div>
       </div>
 
       {/* Print Modal */}
-      <Modal
-        isOpen={showPrintModal}
-        onClose={closePrintModal}
-        title="Imprimir Boleta"
-        size="lg"
-      >
-        <div ref={downloadRef}>
-          {renderBoleta(lastSale)}
-        </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={() => lastSale && generatePDFFromData(lastSale, config)}>
-            Descargar PDF
-          </Button>
-        </div>
-      </Modal>
+      {showPrintModal && lastSale && (
+        <Modal
+          isOpen={showPrintModal}
+          onClose={closePrintModal}
+          title="Vista Previa de Boleta"
+        >
+          <div className="flex justify-center">
+            <div className="bg-white p-4 border rounded-lg" style={{ width: '80mm', maxWidth: '100%' }}>
+              {renderBoleta(lastSale)}
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button variant="secondary" onClick={closePrintModal}>
+              Cerrar
+            </Button>
+            <Button onClick={() => {
+              generateReceiptPDF(lastSale, config);
+            }}>
+              Descargar PDF
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
-} 
+}

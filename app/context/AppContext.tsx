@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useMemo } from 'react';
 
-// Import database adapters
-import { ProductDbAdapter } from '../infrastructure/db/ProductDbAdapter';
-import { SaleDbAdapter } from '../infrastructure/db/SaleDbAdapter';
-import { StoreConfigDbAdapter } from '../infrastructure/db/StoreConfigDbAdapter';
+// Import API adapters
+import { ProductApiAdapter } from '../infrastructure/api/ProductApiAdapter';
+import { SaleApiAdapter } from '../infrastructure/api/SaleApiAdapter';
+import { StoreConfigApiAdapter } from '../infrastructure/api/StoreConfigApiAdapter';
 
 // Import business services
 import { InventoryService } from '../domain/services/InventoryService';
@@ -21,9 +21,9 @@ const AppContext = createContext<any>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // ===== REPOSITORIES (Data access) =====
-  const productRepo = useMemo(() => new ProductDbAdapter(), []);
-  const saleRepo = useMemo(() => new SaleDbAdapter(), []);
-  const configRepo = useMemo(() => new StoreConfigDbAdapter(), []);
+  const productRepo = useMemo(() => new ProductApiAdapter(), []);
+  const saleRepo = useMemo(() => new SaleApiAdapter(), []);
+  const configRepo = useMemo(() => new StoreConfigApiAdapter(), []);
 
   // ===== BUSINESS SERVICES =====
   const inventoryService = useMemo(() => new InventoryService(productRepo), [productRepo]);

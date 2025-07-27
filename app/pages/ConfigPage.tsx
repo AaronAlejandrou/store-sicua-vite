@@ -74,7 +74,7 @@ export function ConfigPage({ onConfigured }: ConfigPageProps) {
         throw new Error('El correo electrónico no es válido');
       }
 
-      await configRepo.set(formData);
+      await configRepo.update(formData);
       
       // If there's a configuration callback, execute it
       if (onConfigured) {

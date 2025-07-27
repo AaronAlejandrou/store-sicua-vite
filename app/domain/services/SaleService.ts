@@ -1,6 +1,7 @@
 import type { Sale } from '../entities/Sale';
-import type { SaleRepository } from '../repositories/SaleRepository';
+import type { SaleRepository, CreateSaleRequest } from '../repositories/SaleRepository';
 import type { ProductRepository } from '../repositories/ProductRepository';
+import type { UpdateProductRequest } from '../entities/Product';
 
 export class SaleService {
   constructor(
@@ -8,22 +9,26 @@ export class SaleService {
     private productRepository: ProductRepository
   ) {}
 
-  async makeSale(sale: Sale): Promise<string> {
+  async makeSale(saleData: CreateSaleRequest): Promise<Sale> {
     // Decrement stock for each product
-    for (const item of sale.items) {
+    for (const item of saleData.items) {
       const product = await this.productRepository.getById(item.productId);
       if (!product) throw new Error('Producto no encontrado');
       if (product.quantity < item.quantity) throw new Error('Stock insuficiente');
-      product.quantity -= item.quantity;
-      await this.productRepository.update(product);
+      
+      const updatedProductData: UpdateProductRequest = {
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        quantity: product.quantity - item.quantity
+      };
+      
+      await this.productRepository.update(item.productId, updatedProductData);
     }
-    return await this.saleRepository.add(sale);
+    return await this.saleRepository.create(saleData);
   }
 
   async markAsInvoiced(saleId: string): Promise<void> {
-    const sale = await this.saleRepository.getById(saleId);
-    if (!sale) throw new Error('Venta no encontrada');
-    sale.invoiced = true;
-    return await this.saleRepository.update(sale);
+    return await this.saleRepository.markAsInvoiced(saleId);
   }
 } 

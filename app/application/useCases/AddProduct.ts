@@ -1,6 +1,6 @@
-import type { Product } from '../../domain/entities/Product';
+import type { CreateProductRequest, Product } from '../../domain/entities/Product';
 import type { InventoryService } from '../../domain/services/InventoryService';
 
-export const AddProduct = (inventoryService: InventoryService) => async (product: Product): Promise<string> => {
-  return await inventoryService.addProduct(product);
+export const AddProduct = (inventoryService: InventoryService) => async (productData: CreateProductRequest): Promise<Product> => {
+  return await inventoryService.addProduct(productData);
 }; 

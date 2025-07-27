@@ -1,9 +1,10 @@
-import type { Product } from '../entities/Product';
+import type { Product, CreateProductRequest, UpdateProductRequest } from '../entities/Product';
 
 export interface ProductRepository {
   getAll(): Promise<Product[]>;
   getById(productId: string): Promise<Product | undefined>;
-  add(product: Product): Promise<string>;
-  update(product: Product): Promise<void>;
+  getByName(name: string): Promise<Product | undefined>;
+  create(product: CreateProductRequest): Promise<Product>;
+  update(productId: string, product: UpdateProductRequest): Promise<Product>;
   delete(productId: string): Promise<void>;
 } 

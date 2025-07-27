@@ -21,14 +21,23 @@ export function AppRouter() {
         console.log('Loading store configuration...');
         const storeConfig = await configRepo.get();
         console.log('Store config loaded:', storeConfig);
+        
+        // Check if it's the default configuration
+        const isDefaultConfig = storeConfig && (
+          storeConfig.name === 'SICUA Store' || 
+          storeConfig.address === 'Default Address' || 
+          storeConfig.email === 'contact@sicua.com' ||
+          storeConfig.phone === '000-000-0000'
+        );
+        
         setConfig(storeConfig);
         
-        // If no configuration, go to configuration page
-        if (!storeConfig) {
-          console.log('No configuration found, redirecting to config page');
+        // If no configuration or default configuration, go to configuration page
+        if (!storeConfig || isDefaultConfig) {
+          console.log('No configuration or default configuration found, redirecting to config page');
           setCurrentPage('config');
         } else {
-          console.log('Configuration found, staying on home page');
+          console.log('Custom configuration found, staying on home page');
         }
       } catch (error) {
         console.error('Error loading configuration:', error);
@@ -63,8 +72,15 @@ export function AppRouter() {
     );
   }
 
-  // If no configuration, show configuration page
-  if (!config) {
+  // If no configuration or default configuration, show configuration page
+  const isDefaultConfig = config && (
+    config.name === 'SICUA Store' || 
+    config.address === 'Default Address' || 
+    config.email === 'contact@sicua.com' ||
+    config.phone === '000-000-0000'
+  );
+
+  if (!config || isDefaultConfig) {
     return <ConfigPage onConfigured={handleConfigComplete} />;
   }
 

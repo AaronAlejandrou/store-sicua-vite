@@ -1,8 +1,20 @@
 import type { Sale } from '../entities/Sale';
 
+export interface CreateSaleRequest {
+  clientDni: string;
+  clientName: string;
+  items: Array<{
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    subtotal: number;
+  }>;
+}
+
 export interface SaleRepository {
   getAll(): Promise<Sale[]>;
   getById(saleId: string): Promise<Sale | undefined>;
-  add(sale: Sale): Promise<string>;
-  update(sale: Sale): Promise<void>;
+  create(saleData: CreateSaleRequest): Promise<Sale>;
+  markAsInvoiced(saleId: string): Promise<void>;
 } 

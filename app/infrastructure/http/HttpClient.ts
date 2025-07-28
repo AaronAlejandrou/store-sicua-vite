@@ -16,19 +16,26 @@ export class HttpClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    console.log(`HttpClient: Making ${options.method || 'GET'} request to:`, url);
+    console.log('Current cookies:', document.cookie);
+    
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Include cookies for session management
       ...options,
     };
 
     try {
       const response = await fetch(url, config);
       
+      console.log(`HttpClient: Response status for ${url}:`, response.status);
+      
       if (!response.ok) {
         const errorData = await response.text();
+        console.error(`HttpClient: Error response for ${url}:`, errorData);
         throw new Error(`HTTP Error ${response.status}: ${errorData}`);
       }
 

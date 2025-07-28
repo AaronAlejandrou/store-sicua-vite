@@ -9,6 +9,7 @@ import { ConfigPage } from '../pages/ConfigPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { LoadingSpinner } from './UI/LoadingSpinner';
+import { config as envConfig } from '../config/environment';
 
 export function AppRouter() {
   const { configRepo } = useAppContext();
@@ -25,7 +26,9 @@ export function AppRouter() {
         console.log('Checking authentication status...');
         
         // Check if user is authenticated
-        const authResponse = await fetch('/api/auth/status');
+        const authResponse = await fetch(`${envConfig.apiBaseUrl}/auth/status`, {
+          credentials: 'include' // Include cookies for session management
+        });
         const isAuth = authResponse.ok;
         
         console.log('Authentication status:', isAuth);
@@ -34,9 +37,16 @@ export function AppRouter() {
         if (isAuth) {
           // User is authenticated, load store config
           console.log('Loading store configuration...');
-          const storeConfig = await configRepo.get();
-          console.log('Store config loaded:', storeConfig);
-          setConfig(storeConfig);
+          try {
+            const storeConfig = await configRepo.get();
+            console.log('Store config loaded:', storeConfig);
+            console.log('Store config type:', typeof storeConfig);
+            console.log('Store config null?', storeConfig === null);
+            setConfig(storeConfig);
+          } catch (configError) {
+            console.error('Error loading store configuration:', configError);
+            setConfig(null);
+          }
         }
         
       } catch (error) {
@@ -60,20 +70,53 @@ export function AppRouter() {
     }
   };
 
-  const handleAuthenticated = () => {
-    setIsAuthenticated(true);
-    window.location.reload(); // Reload to load the store configuration
+  const handleAuthenticated = async () => {
+    try {
+      console.log('=== HANDLE AUTHENTICATED START ===');
+      console.log('User authenticated, loading store configuration...');
+      setIsAuthenticated(true);
+      
+      // Try to load store config after successful authentication
+      try {
+        console.log('Calling configRepo.get()...');
+        const storeConfig = await configRepo.get();
+        console.log('Store config loaded after auth:', storeConfig);
+        console.log('Store config type:', typeof storeConfig);
+        console.log('Store config null?', storeConfig === null);
+        
+        if (storeConfig) {
+          console.log('Setting config and should show MainLayout');
+          setConfig(storeConfig);
+        } else {
+          console.log('Store config is null/falsy, will show ConfigPage');
+          setConfig(null);
+        }
+      } catch (configError) {
+        console.error('Error loading store configuration:', configError);
+        console.log('Config loading failed, setting config to null - user will see ConfigPage');
+        // If config fails to load, set config to null so ConfigPage shows
+        setConfig(null);
+      }
+      
+      console.log('=== HANDLE AUTHENTICATED END ===');
+    } catch (error) {
+      console.error('Error during authentication process:', error);
+    }
   };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${envConfig.apiBaseUrl}/auth/logout`, { 
+        method: 'POST',
+        credentials: 'include' // Include cookies for session management
+      });
     } catch (error) {
       console.error('Error during logout:', error);
     }
     setIsAuthenticated(false);
     setConfig(null);
     setCurrentPage('home');
+    setShowRegister(false); // Ensure we show login page, not registration
   };
 
   const handleConfigComplete = () => {
@@ -103,7 +146,31 @@ export function AppRouter() {
 
   // If authenticated but no valid config, show config page
   if (!config) {
-    return <ConfigPage onConfigured={handleConfigComplete} />;
+    return (
+      <div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">
+                Problema temporal con la configuración
+              </h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>Hay un problema temporal con el servidor de configuración. Puedes continuar sin configurar por ahora.</p>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => setConfig({ name: 'Tienda Temporal', address: '', email: '', phone: '' })}
+                  className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700"
+                >
+                  Continuar sin configurar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ConfigPage onConfigured={handleConfigComplete} />
+      </div>
+    );
   }
 
   return (

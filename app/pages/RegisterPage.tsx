@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
+import { config } from '../config/environment';
 
 interface RegisterPageProps {
   onRegistered: () => void;
@@ -46,9 +47,10 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
         password: formData.password
       };
 
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${config.apiBaseUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for session management
         body: JSON.stringify(registerData)
       });
 
@@ -97,7 +99,7 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
               label="Teléfono *"
               value={formData.storePhone}
               onChange={(e) => handleInputChange('storePhone', e.target.value)}
-              placeholder="+57 300 123 4567"
+              placeholder="+51 999 999 999"
               required
             />
           </div>
@@ -106,7 +108,7 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
             label="Dirección de la tienda *"
             value={formData.storeAddress}
             onChange={(e) => handleInputChange('storeAddress', e.target.value)}
-            placeholder="Calle 123 # 45-67, Ciudad, País"
+            placeholder="Avenida Brasil 123 - Lima, Lima"
             required
           />
 

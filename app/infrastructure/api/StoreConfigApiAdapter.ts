@@ -5,8 +5,12 @@ import type { StoreConfigRepository, UpdateStoreConfigRequest } from '../../doma
 export class StoreConfigApiAdapter implements StoreConfigRepository {
   async get(): Promise<StoreConfig | null> {
     try {
-      return await httpClient.get<StoreConfig>('/store-config');
+      console.log('StoreConfigApiAdapter: Making request to /store-config');
+      const result = await httpClient.get<StoreConfig>('/store-config');
+      console.log('StoreConfigApiAdapter: Got result:', result);
+      return result;
     } catch (error) {
+      console.error('StoreConfigApiAdapter: Error getting store config:', error);
       return null;
     }
   }

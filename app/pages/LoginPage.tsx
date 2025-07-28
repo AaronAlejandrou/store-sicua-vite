@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
+import { config } from '../config/environment';
 
 interface LoginPageProps {
   onAuthenticated: () => void;
@@ -22,11 +23,16 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      console.log('Attempting login with API base URL:', config.apiBaseUrl);
+      const response = await fetch(`${config.apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for session management
         body: JSON.stringify(formData)
       });
+
+      console.log('Login response status:', response.status);
+      console.log('All cookies after login:', document.cookie);
 
       if (!response.ok) {
         const errorData = await response.json();

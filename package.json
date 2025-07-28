@@ -1,19 +1,17 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.0",
   "name": "store-sicua-vite",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "start": "node server.js",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
     "@react-router/node": "^7.7.1",
     "@react-router/serve": "^7.7.1",
     "@types/html2canvas": "^1.0.0",
-    "express": "^4.21.2",
     "html2canvas": "^1.4.1",
     "isbot": "^5.1.27",
     "jspdf": "^3.0.1",

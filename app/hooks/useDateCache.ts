@@ -11,17 +11,41 @@ export const useDateCache = () => {
     }
     
     try {
-      // Crear la fecha una sola vez y formatearla
-      const date = new Date(dateString);
+      // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
+      let date;
+      if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
+        // If it looks like ISO format but without timezone, assume it's UTC
+        date = new Date(dateString + 'Z');
+      } else {
+        date = new Date(dateString);
+      }
+      
       // Verificar que la fecha es válida
       if (isNaN(date.getTime())) {
         console.error('Invalid date string:', dateString, 'for sale:', saleId);
-        const fallbackDate = new Date().toLocaleString();
+        const fallbackDate = new Date().toLocaleString('es-PE', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
         setDateCache(prev => new Map(prev).set(saleId, fallbackDate));
         return fallbackDate;
       }
       
-      const formattedDate = date.toLocaleString();
+      // Format in local timezone
+      const formattedDate = date.toLocaleString('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
       
       // Guardar en cache
       setDateCache(prev => new Map(prev).set(saleId, formattedDate));
@@ -46,9 +70,26 @@ export const useDateCache = () => {
     sales.forEach(sale => {
       if (!newCache.has(sale.id)) {
         try {
-          const date = new Date(sale.date);
+          // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
+          let date;
+          if (sale.date.includes('T') && !sale.date.includes('+') && !sale.date.includes('Z')) {
+            // If it looks like ISO format but without timezone, assume it's UTC
+            date = new Date(sale.date + 'Z');
+          } else {
+            date = new Date(sale.date);
+          }
+          
           if (!isNaN(date.getTime())) {
-            newCache.set(sale.id, date.toLocaleString());
+            const formattedDate = date.toLocaleString('es-PE', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit', 
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+            newCache.set(sale.id, formattedDate);
             hasChanges = true;
           }
         } catch (error) {

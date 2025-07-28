@@ -16,15 +16,33 @@ export function HistoryPage() {
   const [error, setError] = useState('');
   const [ventaSel, setVentaSel] = useState<Sale | null>(null);
 
-  // Función simple para formatear fecha sin cache
+  // Función para formatear fecha con timezone local
   const formatSaleDate = useCallback((dateString: string): string => {
     try {
-      const date = new Date(dateString);
+      // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
+      let date;
+      if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
+        // If it looks like ISO format but without timezone, assume it's UTC
+        date = new Date(dateString + 'Z');
+      } else {
+        date = new Date(dateString);
+      }
+      
       if (isNaN(date.getTime())) {
         console.error('Invalid date string:', dateString);
         return 'Fecha inválida';
       }
-      return date.toLocaleString();
+      
+      // Format in local timezone
+      return date.toLocaleString('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
     } catch (error) {
       console.error('Error formatting date:', error, dateString);
       return 'Error en fecha';

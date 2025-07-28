@@ -8,7 +8,6 @@ import {
 import type { Route } from "./+types/root";
 import { AppProvider } from "./context/AppContext";
 import "./app.css";
-import "./build-info"; // Force build info to be included
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,10 +28,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="cache-control" content="no-cache, no-store, must-revalidate" />
-        <meta name="pragma" content="no-cache" />
-        <meta name="expires" content="0" />
-        <meta name="build-version" content="1.0.2" />
         <title>SICUA - Sistema de Inventario y Control de Ventas</title>
         <Links />
       </head>

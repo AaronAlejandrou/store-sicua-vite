@@ -165,6 +165,13 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
             </div>
           </div>
         </form>
+        
+        {/* Developer Credit */}
+        <div className="text-center">
+          <div className="text-xs text-gray-500 italic">
+            Hecho por Roandro (Aaron Muriel)
+          </div>
+        </div>
       </div>
     </div>
   );

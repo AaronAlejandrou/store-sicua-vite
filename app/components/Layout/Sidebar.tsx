@@ -57,6 +57,9 @@ export function Sidebar({ currentPage, onPageChange, onLogout }: SidebarProps) {
           <div className="text-xs text-gray-400">
             Sistema de Inventario y Control de Ventas
           </div>
+          <div className="text-xs text-gray-500 italic">
+            Hecho por Roandro (Aaron Muriel)
+          </div>
         </div>
       </div>
     </aside>

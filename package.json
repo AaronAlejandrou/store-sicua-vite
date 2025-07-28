@@ -6,6 +6,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
+    "start": "npx serve build/client -s",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -17,7 +18,8 @@
     "jspdf": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router": "^7.7.1"
+    "react-router": "^7.7.1",
+    "serve": "^14.2.3"
   },
   "devDependencies": {
     "@react-router/dev": "^7.7.1",

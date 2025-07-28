@@ -1,5 +1,8 @@
 FROM node:20-alpine AS development-dependencies-env
 WORKDIR /app
+# Add unique build identifier to prevent caching
+ARG BUILD_TIME=unknown
+RUN echo "Build time: $BUILD_TIME" > /build-time.txt
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -10,10 +13,12 @@ RUN npm ci --omit=dev
 
 FROM node:20-alpine AS build-env
 WORKDIR /app
+ARG BUILD_TIME=unknown
+ENV BUILD_TIME=$BUILD_TIME
 COPY package.json package-lock.json ./
 COPY --from=development-dependencies-env /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN echo "Building at: $BUILD_TIME" && npm run build
 
 FROM node:20-alpine
 WORKDIR /app

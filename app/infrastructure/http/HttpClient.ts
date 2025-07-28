@@ -1,11 +1,13 @@
+import { config } from '../../config/environment';
+
 /**
  * HTTP Client for API communication
  */
 export class HttpClient {
   private baseUrl: string;
 
-  constructor(baseUrl: string = '/api') {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl || config.apiBaseUrl;
   }
 
   private async request<T>(

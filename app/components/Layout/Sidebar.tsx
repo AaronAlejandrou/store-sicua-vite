@@ -16,7 +16,7 @@ const NAVIGATION_ITEMS = [
 
 export function Sidebar({ currentPage, onPageChange, onLogout }: SidebarProps) {
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 -translate-x-full transform bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0">
+    <aside className="h-full w-64 bg-gray-800 shadow-lg">
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center justify-center border-b border-gray-700 bg-gradient-to-r from-blue-800 to-blue-900 px-4">

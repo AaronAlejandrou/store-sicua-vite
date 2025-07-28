@@ -8,8 +8,8 @@ export interface SaleItem {
 
 export interface Sale {
   id: string;
-  clientDni: string;
-  clientName: string;
+  clientDni: string | null;
+  clientName: string | null;
   date: string;
   items: SaleItem[];
   total: number;

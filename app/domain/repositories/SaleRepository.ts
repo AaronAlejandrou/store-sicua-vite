@@ -1,8 +1,8 @@
 import type { Sale } from '../entities/Sale';
 
 export interface CreateSaleRequest {
-  clientDni: string;
-  clientName: string;
+  clientDni: string | null;
+  clientName: string | null;
   items: Array<{
     productId: string;
     name: string;

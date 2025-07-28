@@ -82,8 +82,8 @@ export function HistoryPage() {
         </div>
         
         <div className="border-t border-b py-2 mb-4">
-          <p className="text-sm">Cliente: {sale.clientName}</p>
-          <p className="text-sm">DNI: {sale.clientDni}</p>
+          <p className="text-sm">Cliente: {sale.clientName || 'N/A'}</p>
+          <p className="text-sm">DNI: {sale.clientDni || 'N/A'}</p>
           <p className="text-sm">Fecha: {displayDate}</p>
         </div>
 
@@ -204,8 +204,8 @@ export function HistoryPage() {
                 return (
                   <tr key={venta.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-100">{venta.clientName}</div>
-                      <div className="text-sm text-gray-400">DNI: {venta.clientDni}</div>
+                      <div className="text-sm font-medium text-gray-100">{venta.clientName || 'Cliente anónimo'}</div>
+                      <div className="text-sm text-gray-400">DNI: {venta.clientDni || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-100">

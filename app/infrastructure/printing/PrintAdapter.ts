@@ -68,9 +68,9 @@ export const generateReceiptPDF = (sale: Sale, config: StoreConfig | null): bool
     // Client info
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Cliente: ${sale.clientName}`, leftMargin, yPosition);
+    pdf.text(`Cliente: ${sale.clientName || 'Cliente anónimo'}`, leftMargin, yPosition);
     yPosition += 4;
-    pdf.text(`DNI: ${sale.clientDni}`, leftMargin, yPosition);
+    pdf.text(`DNI: ${sale.clientDni || 'No registrado'}`, leftMargin, yPosition);
     yPosition += 4;
     pdf.text(`Fecha: ${formatSaleDate(sale.date)}`, leftMargin, yPosition);
     yPosition += 6;

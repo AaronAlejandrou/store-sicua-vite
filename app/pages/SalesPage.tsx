@@ -147,7 +147,7 @@ export function SalesPage() {
     try {
       if (!items.length) throw new Error('Agregue al menos un producto');
       
-      if (!cliente.name.trim()) throw new Error('El nombre del cliente es obligatorio');
+      // Client name is now optional - removed validation
       
       for (const it of items) {
         if (parseInt(it.ventaQty.toString()) > it.quantity) {
@@ -156,8 +156,8 @@ export function SalesPage() {
       }
 
       const saleData: CreateSaleRequest = {
-        clientDni: cliente.dni.trim() || 'N/A',
-        clientName: cliente.name.trim(),
+        clientDni: cliente.dni.trim() || null,
+        clientName: cliente.name.trim() || null,
         items: items.map(it => ({
           productId: it.productId,
           name: it.name,
@@ -291,11 +291,10 @@ export function SalesPage() {
                   placeholder="Ingrese DNI o RUC (opcional)"
                 />
                 <Input
-                  label="Nombre *"
+                  label="Nombre"
                   value={cliente.name}
                   onChange={(e) => setCliente({...cliente, name: e.target.value})}
-                  placeholder="Nombre del cliente"
-                  required
+                  placeholder="Nombre del cliente (opcional)"
                 />
               </div>
             </div>
@@ -443,7 +442,7 @@ export function SalesPage() {
             <div className="flex space-x-4">
               <Button
                 type="submit"
-                disabled={items.length === 0 || !cliente.name.trim()}
+                disabled={items.length === 0}
                 className="flex-1"
               >
                 Registrar Venta

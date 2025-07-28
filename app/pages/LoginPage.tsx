@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
+import { ForgotPasswordModal } from '../components/Auth/ForgotPasswordModal';
 import { config } from '../config/environment';
 
 interface LoginPageProps {
@@ -52,9 +53,6 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
 
   const handleForgotPassword = () => {
     setShowForgotPassword(true);
-    // Simple alert for now - you can implement email sending later
-    alert('Funcionalidad de recuperación de contraseña será implementada próximamente. Por favor contacta al administrador.');
-    setShowForgotPassword(false);
   };
 
   return (
@@ -124,6 +122,12 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 }

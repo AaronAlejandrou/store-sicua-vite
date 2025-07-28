@@ -22,4 +22,4 @@ COPY --from=production-dependencies-env /app/node_modules ./node_modules
 COPY --from=build-env /app/build/client ./build/client
 COPY server.js ./
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { Modal } from '../UI/Modal';

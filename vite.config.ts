@@ -9,9 +9,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://store-sicua-back-production.up.railway.app',
+        target: 'http://localhost:8080',
+        //target: 'https://store-sicua-back-production.up.railway.app',
         changeOrigin: true,
-        secure: true,
+        //secure: true, // Set to false if using the deployed frontend
+        secure: false,
       },
     },
   },

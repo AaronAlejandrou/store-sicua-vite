@@ -2,7 +2,8 @@ export interface Product {
   productId: string;
   name: string;
   brand: string;
-  category: string;
+  categoryNumber: number | null;
+  size: string | null;
   price: number;
   quantity: number;
   createdAt?: string;
@@ -13,7 +14,8 @@ export interface CreateProductRequest {
   productId: string;
   name: string;
   brand: string;
-  category: string;
+  categoryNumber: number | null;
+  size: string | null;
   price: number;
   quantity: number;
 }
@@ -21,7 +23,8 @@ export interface CreateProductRequest {
 export interface UpdateProductRequest {
   name: string;
   brand: string;
-  category: string;
+  categoryNumber: number | null;
+  size: string | null;
   price: number;
   quantity: number;
 } 

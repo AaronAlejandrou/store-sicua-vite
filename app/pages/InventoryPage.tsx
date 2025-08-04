@@ -5,14 +5,17 @@ import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
 import { Select } from '../components/UI/Select';
 import { LoadingSpinner } from '../components/UI/LoadingSpinner';
-import { CLOTHING_CATEGORIES } from '../domain/constants/ClothingCategories';
+import { CategorySelectWithCreate } from '../components/Category/CategorySelectWithCreate';
+import { CategoryManagement } from '../components/Category/CategoryManagement';
 import type { Product, CreateProductRequest, UpdateProductRequest } from '../domain/entities/Product';
+import type { Category, CategoryOption } from '../domain/entities/Category';
 
 interface ProductFormData {
   productId: string;
   name: string;
   brand: string;
-  category: string;
+  categoryNumber: number | null;
+  size: string;
   price: string;
   quantity: string;
 }
@@ -22,19 +25,24 @@ function ProductForm({
   onSave, 
   onCancel, 
   error,
-  isLoading
+  isLoading,
+  categories,
+  onCategoryCreated
 }: {
   product: Product | null;
   onSave: (data: ProductFormData) => void;
   onCancel: () => void;
   error: string;
   isLoading: boolean;
+  categories: CategoryOption[];
+  onCategoryCreated: () => void;
 }) {
   const [formData, setFormData] = useState<ProductFormData>({
     productId: '',
     name: '',
     brand: '',
-    category: CLOTHING_CATEGORIES[0],
+    categoryNumber: null,
+    size: '',
     price: '',
     quantity: ''
   });
@@ -47,7 +55,8 @@ function ProductForm({
         productId: product.productId,
         name: product.name,
         brand: product.brand || '',
-        category: product.category,
+        categoryNumber: product.categoryNumber,
+        size: product.size || '',
         price: product.price.toString(),
         quantity: product.quantity.toString()
       });
@@ -56,7 +65,8 @@ function ProductForm({
         productId: '',
         name: '',
         brand: '',
-        category: CLOTHING_CATEGORIES[0],
+        categoryNumber: null,
+        size: '',
         price: '',
         quantity: ''
       });
@@ -72,6 +82,13 @@ function ProductForm({
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleCategoryChange = (categoryNumber: number | null) => {
+    setFormData(prev => ({
+      ...prev,
+      categoryNumber
     }));
   };
 
@@ -103,12 +120,25 @@ function ProductForm({
           placeholder="Ej: Ralph Lauren, Nike, Adidas"
         />
 
-        <Select
-          label="Categoría *"
-          value={formData.category}
-          onChange={(value) => handleInputChange('category', value)}
-          options={CLOTHING_CATEGORIES.map(cat => ({ value: cat, label: cat }))}
-          required
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Categoría
+          </label>
+          <CategorySelectWithCreate
+            value={formData.categoryNumber}
+            onChange={handleCategoryChange}
+            categories={categories}
+            onCategoryCreated={onCategoryCreated}
+            placeholder="Seleccionar categoría"
+            className="w-full"
+          />
+        </div>
+
+        <Input
+          label="Talla"
+          value={formData.size}
+          onChange={(e) => handleInputChange('size', e.target.value)}
+          placeholder="Ej: S, M, L, XL, 38, 40, etc."
         />
 
         <Input
@@ -153,19 +183,26 @@ function ProductForm({
 }
 
 export function InventoryPage() {
-  const { productRepo } = useAppContext();
+  const { productRepo, categoryService } = useAppContext();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryManagement, setShowCategoryManagement] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [error, setError] = useState('');
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
 
   useEffect(() => {
-    loadProducts();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    await Promise.all([loadProducts(), loadCategories()]);
+  };
 
   const loadProducts = async () => {
     try {
@@ -177,6 +214,29 @@ export function InventoryPage() {
       setError('Error al cargar los productos');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const allCategories = await categoryService.getAllCategories();
+      setCategories(allCategories);
+      const options = await categoryService.getCategoryOptions();
+      setCategoryOptions(options);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const handleCategoryCreatedInForm = async () => {
+    // Silently reload categories without affecting the modal state
+    try {
+      const allCategories = await categoryService.getAllCategories();
+      setCategories(allCategories);
+      const options = await categoryService.getCategoryOptions();
+      setCategoryOptions(options);
+    } catch (error) {
+      console.error('Error reloading categories:', error);
     }
   };
 
@@ -193,9 +253,18 @@ export function InventoryPage() {
   };
 
   const handleDeleteProduct = async (product: Product) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar "${product.name}"?`)) {
+    let confirmMessage = `¿Estás seguro de que quieres eliminar "${product.name}"?`;
+    
+    // Add warning if product has stock
+    if (product.quantity > 0) {
+      confirmMessage = `⚠️ ATENCIÓN: El producto "${product.name}" tiene ${product.quantity} unidades en stock.\n\n¿Estás seguro de que quieres eliminarlo de todos modos?\n\nEsta acción no se puede deshacer.`;
+    }
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        await productRepo.delete(product.productId);
+        // Use force deletion if product has stock
+        const forceDelete = product.quantity > 0;
+        await productRepo.delete(product.productId, forceDelete);
         await loadProducts();
       } catch (error) {
         console.error('Error deleting product:', error);
@@ -213,7 +282,8 @@ export function InventoryPage() {
         productId: formData.productId,
         name: formData.name,
         brand: formData.brand,
-        category: formData.category,
+        categoryNumber: formData.categoryNumber,
+        size: formData.size,
         price: parseFloat(formData.price),
         quantity: parseInt(formData.quantity)
       };
@@ -223,7 +293,8 @@ export function InventoryPage() {
         const updateData: UpdateProductRequest = {
           name: productData.name,
           brand: productData.brand,
-          category: productData.category,
+          categoryNumber: productData.categoryNumber,
+          size: productData.size,
           price: productData.price,
           quantity: productData.quantity
         };
@@ -234,7 +305,8 @@ export function InventoryPage() {
           productId: productData.productId,
           name: productData.name,
           brand: productData.brand,
-          category: productData.category,
+          categoryNumber: productData.categoryNumber,
+          size: productData.size,
           price: productData.price,
           quantity: productData.quantity
         };
@@ -254,15 +326,20 @@ export function InventoryPage() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.productId.toLowerCase().includes(searchTerm.toLowerCase());
+                         product.productId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.size || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || product.categoryNumber === categoryFilter;
     
     return matchesSearch && matchesCategory;
   });
 
-  const uniqueCategories = Array.from(new Set(products.map(p => p.category))).sort();
+  const uniqueCategoryNumbers = Array.from(new Set(products.map(p => p.categoryNumber).filter(Boolean))).sort((a, b) => a! - b!);
   const lowStockProducts = products.filter(p => p.quantity <= 5);
+
+  const getCategoryDisplayText = (categoryNumber: number | null): string => {
+    return categoryService.getCategoryDisplayText(categoryNumber, categories);
+  };
 
   if (isLoading) {
     return (
@@ -344,7 +421,7 @@ export function InventoryPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Categorías</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{uniqueCategories.length}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{categories.length}</p>
             </div>
           </div>
         </div>
@@ -352,22 +429,40 @@ export function InventoryPage() {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             label="Buscar productos"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, marca o ID..."
+            placeholder="Buscar por nombre, marca, ID o talla..."
           />
           <Select
             label="Filtrar por categoría"
-            value={categoryFilter}
-            onChange={(value) => setCategoryFilter(value)}
+            value={categoryFilter.toString()}
+            onChange={(value) => setCategoryFilter(value === 'all' ? 'all' : parseInt(value))}
             options={[
               { value: 'all', label: 'Todas las categorías' },
-              ...uniqueCategories.map(cat => ({ value: cat, label: cat }))
+              ...uniqueCategoryNumbers.map(catNum => {
+                const category = categories.find(c => c.categoryNumber === catNum);
+                return { 
+                  value: catNum!.toString(), 
+                  label: category ? `${catNum} - ${category.name}` : `Categoría ${catNum}` 
+                };
+              })
             ]}
           />
+          <div className="flex items-end">
+            <Button
+              onClick={() => setShowCategoryManagement(true)}
+              variant="secondary"
+              className="w-full"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+              Gestionar Categorías
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -388,6 +483,9 @@ export function InventoryPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Categoría
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Talla
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Precio
@@ -413,7 +511,10 @@ export function InventoryPage() {
                     {product.brand || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {product.category}
+                    {getCategoryDisplayText(product.categoryNumber)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {product.size || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     S/ {product.price.toFixed(2)}
@@ -497,8 +598,16 @@ export function InventoryPage() {
           onCancel={() => setShowModal(false)}
           error={error}
           isLoading={isFormLoading}
+          categories={categoryOptions}
+          onCategoryCreated={handleCategoryCreatedInForm}
         />
       </Modal>
+
+      <CategoryManagement
+        isOpen={showCategoryManagement}
+        onClose={() => setShowCategoryManagement(false)}
+        onCategoriesChange={loadCategories}
+      />
     </div>
   );
 }

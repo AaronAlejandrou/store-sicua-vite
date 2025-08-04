@@ -143,36 +143,7 @@ export function AppRouter() {
         onSwitchToRegister={() => setShowRegister(true)}
       />;
   }
-
-  // If authenticated but no valid config, show config page
-  if (!config) {
-    return (
-      <div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
-          <div className="flex">
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
-                Problema temporal con la configuración
-              </h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>Hay un problema temporal con el servidor de configuración. Puedes continuar sin configurar por ahora.</p>
-              </div>
-              <div className="mt-3">
-                <button
-                  onClick={() => setConfig({ name: 'Tienda Temporal', address: '', email: '', phone: '' })}
-                  className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700"
-                >
-                  Continuar sin configurar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <ConfigPage onConfigured={handleConfigComplete} />
-      </div>
-    );
-  }
-
+  
   return (
     <MainLayout currentPage={currentPage} onPageChange={handlePageChange} onLogout={handleLogout}>
       {currentPage === 'home' && <HomePage key={refreshKey} onNavigate={handlePageChange} refreshKey={refreshKey} />}

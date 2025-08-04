@@ -6,5 +6,5 @@ export interface ProductRepository {
   getByName(name: string): Promise<Product | undefined>;
   create(product: CreateProductRequest): Promise<Product>;
   update(productId: string, product: UpdateProductRequest): Promise<Product>;
-  delete(productId: string): Promise<void>;
+  delete(productId: string, force?: boolean): Promise<void>;
 } 

@@ -15,8 +15,9 @@ export class ProductApiAdapter implements ProductRepository {
     return httpClient.put<Product>(`/products/${productId}`, product);
   }
 
-  async delete(productId: string): Promise<void> {
-    return httpClient.delete<void>(`/products/${productId}`);
+  async delete(productId: string, force: boolean = false): Promise<void> {
+    const url = force ? `/products/${productId}?force=true` : `/products/${productId}`;
+    return httpClient.delete<void>(url);
   }
 
   async getById(productId: string): Promise<Product | undefined> {

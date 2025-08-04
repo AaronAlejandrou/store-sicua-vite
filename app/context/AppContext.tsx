@@ -4,10 +4,15 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { ProductApiAdapter } from '../infrastructure/api/ProductApiAdapter';
 import { SaleApiAdapter } from '../infrastructure/api/SaleApiAdapter';
 import { StoreConfigApiAdapter } from '../infrastructure/api/StoreConfigApiAdapter';
+import { CategoryApiAdapter } from '../infrastructure/api/CategoryApiAdapter';
+
+// Import HTTP client
+import { HttpClient } from '../infrastructure/http/HttpClient';
 
 // Import business services
 import { InventoryService } from '../domain/services/InventoryService';
 import { SaleService } from '../domain/services/SaleService';
+import { CategoryService } from '../domain/services/CategoryService';
 
 // Import all use cases
 import { AddProduct } from '../application/useCases/AddProduct';
@@ -20,14 +25,19 @@ import { MarkSaleAsInvoiced } from '../application/useCases/MarkSaleAsInvoiced';
 const AppContext = createContext<any>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  // ===== HTTP CLIENT =====
+  const httpClient = useMemo(() => new HttpClient(), []);
+
   // ===== REPOSITORIES (Data access) =====
   const productRepo = useMemo(() => new ProductApiAdapter(), []);
   const saleRepo = useMemo(() => new SaleApiAdapter(), []);
   const configRepo = useMemo(() => new StoreConfigApiAdapter(), []);
+  const categoryRepo = useMemo(() => new CategoryApiAdapter(httpClient), [httpClient]);
 
   // ===== BUSINESS SERVICES =====
   const inventoryService = useMemo(() => new InventoryService(productRepo), [productRepo]);
   const saleService = useMemo(() => new SaleService(saleRepo, productRepo), [saleRepo, productRepo]);
+  const categoryService = useMemo(() => new CategoryService(categoryRepo), [categoryRepo]);
 
   // ===== USE CASES (Main app functions) =====
   const useCases = useMemo(() => ({
@@ -40,11 +50,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     makeSale: MakeSale(saleService),
     markSaleAsInvoiced: MarkSaleAsInvoiced(saleService),
     
+    // Services for direct access
+    categoryService,
+    
     // Repositories for direct data access
     productRepo,
     saleRepo,
-    configRepo
-  }), [inventoryService, saleService, productRepo, saleRepo, configRepo]);
+    configRepo,
+    categoryRepo
+  }), [inventoryService, saleService, categoryService, productRepo, saleRepo, configRepo, categoryRepo]);
 
   return (
     <AppContext.Provider value={useCases}>

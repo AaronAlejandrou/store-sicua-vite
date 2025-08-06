@@ -7,8 +7,10 @@ import { Select } from '../components/UI/Select';
 import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { CategorySelectWithCreate } from '../components/Category/CategorySelectWithCreate';
 import { CategoryManagement } from '../components/Category/CategoryManagement';
+import { ExcelImportModal } from '../components/Excel/ExcelImportModal';
 import type { Product, CreateProductRequest, UpdateProductRequest } from '../domain/entities/Product';
 import type { Category, CategoryOption } from '../domain/entities/Category';
+import type { ExcelImportResponse } from '../domain/services/ExcelService';
 
 interface ProductFormData {
   productId: string;
@@ -16,6 +18,7 @@ interface ProductFormData {
   brand: string;
   categoryNumber: number | null;
   size: string;
+  color: string;
   price: string;
   quantity: string;
 }
@@ -37,12 +40,40 @@ function ProductForm({
   categories: CategoryOption[];
   onCategoryCreated: () => void;
 }) {
+  // Helper function to parse combined size field (e.g., "M - Azul" -> {size: "M", color: "Azul"})
+  const parseSizeField = (combinedSize: string | null | undefined): {size: string, color: string} => {
+    if (!combinedSize || combinedSize.trim() === '') {
+      return {size: '', color: ''};
+    }
+    
+    const parts = combinedSize.split(' - ');
+    if (parts.length === 2) {
+      return {size: parts[0].trim(), color: parts[1].trim()};
+    } else {
+      return {size: combinedSize.trim(), color: ''};
+    }
+  };
+
+  // Helper function to combine size and color (e.g., "M" + "Azul" -> "M - Azul")
+  const combineSizeAndColor = (size: string, color: string): string => {
+    const trimmedSize = size.trim();
+    const trimmedColor = color.trim();
+    
+    if (trimmedSize && trimmedColor) {
+      return `${trimmedSize} - ${trimmedColor}`;
+    } else if (trimmedSize) {
+      return trimmedSize;
+    } else {
+      return '';
+    }
+  };
   const [formData, setFormData] = useState<ProductFormData>({
     productId: '',
     name: '',
     brand: '',
     categoryNumber: null,
     size: '',
+    color: '',
     price: '',
     quantity: ''
   });
@@ -51,12 +82,14 @@ function ProductForm({
 
   useEffect(() => {
     if (product) {
+      const parsedSizeColor = parseSizeField(product.size);
       setFormData({
         productId: product.productId,
         name: product.name,
         brand: product.brand || '',
         categoryNumber: product.categoryNumber,
-        size: product.size || '',
+        size: parsedSizeColor.size,
+        color: parsedSizeColor.color,
         price: product.price.toString(),
         quantity: product.quantity.toString()
       });
@@ -67,6 +100,7 @@ function ProductForm({
         brand: '',
         categoryNumber: null,
         size: '',
+        color: '',
         price: '',
         quantity: ''
       });
@@ -75,7 +109,13 @@ function ProductForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    // Combine size and color for storage
+    const combinedSize = combineSizeAndColor(formData.size, formData.color);
+    const dataToSave = {
+      ...formData,
+      size: combinedSize
+    };
+    onSave(dataToSave);
   };
 
   const handleInputChange = (field: keyof ProductFormData, value: string) => {
@@ -142,6 +182,13 @@ function ProductForm({
         />
 
         <Input
+          label="Color"
+          value={formData.color}
+          onChange={(e) => handleInputChange('color', e.target.value)}
+          placeholder="Ej: Azul, Rojo, Negro, Blanco, etc."
+        />
+
+        <Input
           label="Precio *"
           type="number"
           step="0.01"
@@ -183,13 +230,14 @@ function ProductForm({
 }
 
 export function InventoryPage() {
-  const { productRepo, categoryService } = useAppContext();
+  const { productRepo, categoryService, excelService } = useAppContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showCategoryManagement, setShowCategoryManagement] = useState(false);
+  const [showExcelImportModal, setShowExcelImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [error, setError] = useState('');
   const [isFormLoading, setIsFormLoading] = useState(false);
@@ -323,6 +371,33 @@ export function InventoryPage() {
     }
   };
 
+  // Excel import/export handlers
+  const handleExcelImport = async (file: File): Promise<ExcelImportResponse> => {
+    try {
+      return await excelService.importProducts(file);
+    } catch (error: any) {
+      throw new Error(error.message || 'Error importing products from Excel');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await excelService.downloadTemplate();
+    } catch (error: any) {
+      console.error('Error downloading template:', error);
+      setError('Error descargando plantilla de Excel');
+    }
+  };
+
+  const handleExportInventory = async () => {
+    try {
+      await excelService.exportInventory();
+    } catch (error: any) {
+      console.error('Error exporting inventory:', error);
+      setError('Error exportando inventario');
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -361,9 +436,36 @@ export function InventoryPage() {
             Administra tu catálogo de productos de ropa
           </p>
         </div>
-        <Button onClick={handleCreateProduct}>
-          + Nuevo Producto
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Excel Operations */}
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowExcelImportModal(true)}
+              className="text-sm"
+            >
+              📥 Importar Productos
+            </Button>
+            <Button
+              variant="secondary" 
+              onClick={handleDownloadTemplate}
+              className="text-sm"
+            >
+              📋 Plantilla Excel
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleExportInventory}
+              className="text-sm"
+            >
+              📤 Exportar Inventario
+            </Button>
+          </div>
+          {/* New Product Button */}
+          <Button onClick={handleCreateProduct}>
+            + Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -607,6 +709,13 @@ export function InventoryPage() {
         isOpen={showCategoryManagement}
         onClose={() => setShowCategoryManagement(false)}
         onCategoriesChange={loadCategories}
+      />
+
+      <ExcelImportModal
+        isOpen={showExcelImportModal}
+        onClose={() => setShowExcelImportModal(false)}
+        onImport={handleExcelImport}
+        onRefreshProducts={loadProducts}
       />
     </div>
   );

@@ -72,6 +72,68 @@ export class HttpClient {
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+
+  async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    console.log(`HttpClient: Making POST FormData request to:`, url);
+    
+    const config: RequestInit = {
+      method: 'POST',
+      body: formData,
+      credentials: 'include', // Include cookies for session management
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      console.log(`HttpClient: Response status for ${url}:`, response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`HttpClient: Error response for ${url}:`, errorData);
+        throw new Error(`HTTP Error ${response.status}: ${errorData}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      
+      return response.text() as T;
+    } catch (error) {
+      console.error(`API FormData request failed: ${url}`, error);
+      throw error;
+    }
+  }
+
+  async getBlob(endpoint: string): Promise<Blob> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    console.log(`HttpClient: Making GET Blob request to:`, url);
+    
+    const config: RequestInit = {
+      method: 'GET',
+      credentials: 'include', // Include cookies for session management
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      console.log(`HttpClient: Response status for ${url}:`, response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`HttpClient: Error response for ${url}:`, errorData);
+        throw new Error(`HTTP Error ${response.status}: ${errorData}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error(`API Blob request failed: ${url}`, error);
+      throw error;
+    }
+  }
 }
 
 export const httpClient = new HttpClient();

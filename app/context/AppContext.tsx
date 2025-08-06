@@ -5,6 +5,7 @@ import { ProductApiAdapter } from '../infrastructure/api/ProductApiAdapter';
 import { SaleApiAdapter } from '../infrastructure/api/SaleApiAdapter';
 import { StoreConfigApiAdapter } from '../infrastructure/api/StoreConfigApiAdapter';
 import { CategoryApiAdapter } from '../infrastructure/api/CategoryApiAdapter';
+import { ExcelApiAdapter } from '../infrastructure/api/ExcelApiAdapter';
 
 // Import HTTP client
 import { HttpClient } from '../infrastructure/http/HttpClient';
@@ -33,6 +34,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const saleRepo = useMemo(() => new SaleApiAdapter(), []);
   const configRepo = useMemo(() => new StoreConfigApiAdapter(), []);
   const categoryRepo = useMemo(() => new CategoryApiAdapter(httpClient), [httpClient]);
+  const excelService = useMemo(() => new ExcelApiAdapter(httpClient), [httpClient]);
 
   // ===== BUSINESS SERVICES =====
   const inventoryService = useMemo(() => new InventoryService(productRepo), [productRepo]);
@@ -52,13 +54,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     // Services for direct access
     categoryService,
+    excelService,
     
     // Repositories for direct data access
     productRepo,
     saleRepo,
     configRepo,
     categoryRepo
-  }), [inventoryService, saleService, categoryService, productRepo, saleRepo, configRepo, categoryRepo]);
+  }), [inventoryService, saleService, categoryService, excelService, productRepo, saleRepo, configRepo, categoryRepo]);
 
   return (
     <AppContext.Provider value={useCases}>

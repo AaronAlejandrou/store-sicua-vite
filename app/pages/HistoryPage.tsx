@@ -4,6 +4,9 @@ import { generateReceiptPDF } from '../infrastructure/printing/PrintAdapter';
 import { Button } from '../components/UI/Button';
 import { Modal } from '../components/UI/Modal';
 import { LoadingSpinner } from '../components/UI/LoadingSpinner';
+import { Input } from '../components/UI/Input';
+import { Select } from '../components/UI/Select';
+import { WhatsAppModal } from '../components/UI/WhatsAppModal';
 import type { Sale } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
 
@@ -15,25 +18,27 @@ export function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [ventaSel, setVentaSel] = useState<Sale | null>(null);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsAppSale, setWhatsAppSale] = useState<Sale | null>(null);
 
-  // Función para formatear fecha con timezone local
+  // Date filtering states
+  const [dateFilterType, setDateFilterType] = useState<'all' | 'dateRange' | 'month'>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+
+  // Función para formatear fecha como local time
   const formatSaleDate = useCallback((dateString: string): string => {
     try {
-      // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
-      let date;
-      if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
-        // If it looks like ISO format but without timezone, assume it's UTC
-        date = new Date(dateString + 'Z');
-      } else {
-        date = new Date(dateString);
-      }
+      // Parse the date string as local time (no timezone conversion)
+      const date = new Date(dateString);
       
       if (isNaN(date.getTime())) {
         console.error('Invalid date string:', dateString);
         return 'Fecha inválida';
       }
       
-      // Format in local timezone
+      // Format as local time (no timezone specification)
       return date.toLocaleString('es-PE', {
         year: 'numeric',
         month: '2-digit',
@@ -71,10 +76,51 @@ export function HistoryPage() {
   }, [cargar]);
 
   const ventasFiltradas = ventas.filter(venta => {
-    if (filtro === 'todas') return true;
-    if (filtro === 'porFacturar') return !venta.invoiced;
-    if (filtro === 'facturadas') return venta.invoiced;
-    return true;
+    // Status filter
+    let passesStatusFilter = true;
+    if (filtro === 'porFacturar') passesStatusFilter = !venta.invoiced;
+    else if (filtro === 'facturadas') passesStatusFilter = venta.invoiced;
+
+    // Date filter
+    let passesDateFilter = true;
+    if (dateFilterType !== 'all') {
+      try {
+        // Parse the sale date - handle both UTC and local timezone scenarios
+        let saleDate;
+        if (venta.date.includes('T') && !venta.date.includes('+') && !venta.date.includes('Z')) {
+          // If it looks like ISO format but without timezone, treat as local time
+          saleDate = new Date(venta.date);
+        } else {
+          saleDate = new Date(venta.date);
+        }
+        
+        if (dateFilterType === 'dateRange') {
+          if (startDate) {
+            // Create start date in local timezone
+            const start = new Date(startDate + 'T00:00:00');
+            if (saleDate < start) passesDateFilter = false;
+          }
+          if (endDate) {
+            // Create end date in local timezone
+            const end = new Date(endDate + 'T23:59:59.999');
+            if (saleDate > end) passesDateFilter = false;
+          }
+        } else if (dateFilterType === 'month' && selectedMonth) {
+          const [year, month] = selectedMonth.split('-');
+          const saleYear = saleDate.getFullYear();
+          const saleMonth = saleDate.getMonth() + 1; // getMonth() is 0-indexed
+          
+          if (saleYear !== parseInt(year) || saleMonth !== parseInt(month)) {
+            passesDateFilter = false;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing date for filtering:', error, 'Sale date:', venta.date);
+        passesDateFilter = false;
+      }
+    }
+
+    return passesStatusFilter && passesDateFilter;
   });
 
   const handleMarkAsInvoiced = async (saleId: string) => {
@@ -84,6 +130,93 @@ export function HistoryPage() {
     } catch (error) {
       console.error('Error marking as invoiced:', error);
     }
+  };
+
+  const openWhatsAppModal = (sale: Sale) => {
+    setWhatsAppSale(sale);
+    setShowWhatsAppModal(true);
+  };
+
+  const closeWhatsAppModal = () => {
+    setShowWhatsAppModal(false);
+    setWhatsAppSale(null);
+  };
+
+  // Helper function to generate month options from sales data
+  const getMonthOptions = () => {
+    const monthsSet = new Set<string>();
+    ventas.forEach(venta => {
+      try {
+        const date = new Date(venta.date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        monthsSet.add(`${year}-${month}`);
+      } catch (error) {
+        console.error('Error parsing date for month options:', error);
+      }
+    });
+
+    const monthsArray = Array.from(monthsSet).sort().reverse(); // Most recent first
+    return monthsArray.map(monthKey => {
+      const [year, month] = monthKey.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      const monthName = date.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+      return {
+        value: monthKey,
+        label: monthName.charAt(0).toUpperCase() + monthName.slice(1)
+      };
+    });
+  };
+
+  // Helper function to clear date filters
+  const clearDateFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setSelectedMonth('');
+    setDateFilterType('all');
+  };
+
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Helper functions for quick date filters
+  const setTodayFilter = () => {
+    const today = getTodayDate();
+    setDateFilterType('dateRange');
+    setStartDate(today);
+    setEndDate(today);
+    setSelectedMonth('');
+  };
+
+  const setThisWeekFilter = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    setDateFilterType('dateRange');
+    setStartDate(monday.toISOString().split('T')[0]);
+    setEndDate(sunday.toISOString().split('T')[0]);
+    setSelectedMonth('');
+  };
+
+  const setThisMonthFilter = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    
+    setDateFilterType('month');
+    setSelectedMonth(`${year}-${month}`);
+    setStartDate('');
+    setEndDate('');
   };
 
   const renderBoleta = (sale: Sale) => {
@@ -156,6 +289,15 @@ export function HistoryPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Historial de Ventas
         </h1>
+        {/* Sales Summary */}
+        <div className="text-right">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Total mostrado: {ventasFiltradas.length} venta{ventasFiltradas.length !== 1 ? 's' : ''}
+          </p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+            S/ {ventasFiltradas.reduce((sum, venta) => sum + venta.total, 0).toFixed(2)}
+          </p>
+        </div>
       </div>
 
       {error && (
@@ -165,26 +307,143 @@ export function HistoryPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-gray-800 rounded-lg shadow-sm p-6">
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant={filtro === 'todas' ? 'primary' : 'outline'}
-            onClick={() => setFiltro('todas')}
-          >
-            Todas ({ventas.length})
-          </Button>
-          <Button
-            variant={filtro === 'porFacturar' ? 'primary' : 'outline'}
-            onClick={() => setFiltro('porFacturar')}
-          >
-            Por Facturar ({ventas.filter(v => !v.invoiced).length})
-          </Button>
-          <Button
-            variant={filtro === 'facturadas' ? 'primary' : 'outline'}
-            onClick={() => setFiltro('facturadas')}
-          >
-            Facturadas ({ventas.filter(v => v.invoiced).length})
-          </Button>
+      <div className="bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
+        {/* Status Filters */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-300 mb-3">Filtrar por Estado</h3>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant={filtro === 'todas' ? 'primary' : 'outline'}
+              onClick={() => setFiltro('todas')}
+            >
+              Todas ({ventas.length})
+            </Button>
+            <Button
+              variant={filtro === 'porFacturar' ? 'primary' : 'outline'}
+              onClick={() => setFiltro('porFacturar')}
+            >
+              Por Facturar ({ventas.filter(v => !v.invoiced).length})
+            </Button>
+            <Button
+              variant={filtro === 'facturadas' ? 'primary' : 'outline'}
+              onClick={() => setFiltro('facturadas')}
+            >
+              Facturadas ({ventas.filter(v => v.invoiced).length})
+            </Button>
+          </div>
+        </div>
+
+        {/* Date Filters */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-300 mb-3">Filtrar por Fecha</h3>
+          
+          {/* Quick Date Filters */}
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 mb-2">Filtros rápidos:</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={setTodayFilter}
+              >
+                Hoy
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={setThisWeekFilter}
+              >
+                Esta Semana
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={setThisMonthFilter}
+              >
+                Este Mes
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Select
+              label="Tipo de filtro"
+              value={dateFilterType}
+              onChange={(value) => {
+                setDateFilterType(value as typeof dateFilterType);
+                if (value === 'all') {
+                  clearDateFilters();
+                }
+              }}
+              options={[
+                { value: 'all', label: 'Todas las fechas' },
+                { value: 'dateRange', label: 'Rango de fechas' },
+                { value: 'month', label: 'Por mes' }
+              ]}
+            />
+
+            {dateFilterType === 'dateRange' && (
+              <>
+                <Input
+                  label="Fecha inicio"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  max={getTodayDate()}
+                />
+                <Input
+                  label="Fecha fin"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  max={getTodayDate()}
+                  min={startDate}
+                />
+              </>
+            )}
+
+            {dateFilterType === 'month' && (
+              <Select
+                label="Seleccionar mes"
+                value={selectedMonth}
+                onChange={(value) => setSelectedMonth(value)}
+                options={[
+                  { value: '', label: 'Seleccionar mes...' },
+                  ...getMonthOptions()
+                ]}
+              />
+            )}
+
+            {dateFilterType !== 'all' && (
+              <div className="flex items-end">
+                <Button
+                  variant="secondary"
+                  onClick={clearDateFilters}
+                  className="w-full"
+                >
+                  Limpiar Filtros
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Filter Summary */}
+          {dateFilterType !== 'all' && (
+            <div className="mt-3 text-sm text-gray-400">
+              Mostrando {ventasFiltradas.length} venta{ventasFiltradas.length !== 1 ? 's' : ''} 
+              {dateFilterType === 'dateRange' && (startDate || endDate) && (
+                <span>
+                  {' '}del {startDate ? new Date(startDate).toLocaleDateString('es-PE') : 'inicio'} al{' '}
+                  {endDate ? new Date(endDate).toLocaleDateString('es-PE') : 'presente'}
+                </span>
+              )}
+              {dateFilterType === 'month' && selectedMonth && (
+                <span>
+                  {' '}de {getMonthOptions().find(opt => opt.value === selectedMonth)?.label.toLowerCase()}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -260,6 +519,13 @@ export function HistoryPage() {
                       >
                         Ver Boleta
                       </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => openWhatsAppModal(venta)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        WhatsApp
+                      </Button>
                       {!venta.invoiced && (
                         <Button
                           size="sm"
@@ -278,7 +544,15 @@ export function HistoryPage() {
 
         {ventasFiltradas.length === 0 && (
           <div className="text-center py-8 text-gray-400">
-            No se encontraron ventas para el filtro seleccionado.
+            {ventas.length === 0 
+              ? 'No se encontraron ventas registradas.'
+              : 'No se encontraron ventas para los filtros seleccionados.'
+            }
+            {(dateFilterType !== 'all' || filtro !== 'todas') && ventas.length > 0 && (
+              <p className="mt-2 text-sm">
+                Intenta ajustar los filtros para ver más resultados.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -306,6 +580,15 @@ export function HistoryPage() {
           </div>
         </Modal>
       )}
+
+      {/* WhatsApp Modal */}
+      <WhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={closeWhatsAppModal}
+        storeName={config?.name}
+        defaultPhone={whatsAppSale?.clientDni || ''}
+        title="Contactar Cliente por WhatsApp"
+      />
     </div>
   );
 }

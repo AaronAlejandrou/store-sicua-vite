@@ -5,6 +5,7 @@ import { Button } from '../components/UI/Button';
 import { Input } from '../components/UI/Input';
 import { Modal } from '../components/UI/Modal';
 import { LoadingSpinner } from '../components/UI/LoadingSpinner';
+import { WhatsAppModal } from '../components/UI/WhatsAppModal';
 import type { Product } from '../domain/entities/Product';
 import type { Sale, SaleItem } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
@@ -28,26 +29,21 @@ export function SalesPage() {
   const [busquedaError, setBusquedaError] = useState('');
   const [lastSale, setLastSale] = useState<Sale | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Función para formatear fecha con timezone local
+  // Función para formatear fecha como local time
   const formatSaleDate = useCallback((dateString: string): string => {
     try {
-      // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
-      let date;
-      if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
-        // If it looks like ISO format but without timezone, assume it's UTC
-        date = new Date(dateString + 'Z');
-      } else {
-        date = new Date(dateString);
-      }
+      // Parse the date string as local time (no timezone conversion)
+      const date = new Date(dateString);
       
       if (isNaN(date.getTime())) {
         console.error('Invalid date string:', dateString);
         return 'Fecha inválida';
       }
       
-      // Format in local timezone  
+      // Format as local time (no timezone specification)
       return date.toLocaleString('es-PE', {
         year: 'numeric',
         month: '2-digit',
@@ -204,6 +200,9 @@ export function SalesPage() {
 
   const openPrintModal = () => setShowPrintModal(true);
   const closePrintModal = () => setShowPrintModal(false);
+  
+  const openWhatsAppModal = () => setShowWhatsAppModal(true);
+  const closeWhatsAppModal = () => setShowWhatsAppModal(false);
 
   const renderBoleta = (saleData: Sale | null) => {
     // Si no hay datos de venta, usar los items actuales para la vista previa
@@ -351,7 +350,7 @@ export function SalesPage() {
                             <p className="font-medium text-blue-600 dark:text-blue-400">ID: {producto.productId}</p>
                             <p className="font-medium">{producto.name}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {producto.brand && `${producto.brand} - `}{producto.category} - Stock: {producto.quantity}
+                              {producto.brand && `${producto.brand} - `}Stock: {producto.quantity}
                             </p>
                           </div>
                           <span className="text-green-600 font-medium">
@@ -449,9 +448,17 @@ export function SalesPage() {
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
                 {success}
-                <div className="mt-2">
+                <div className="mt-2 flex space-x-2">
                   <Button type="button" size="sm" onClick={openPrintModal}>
                     Ver/Imprimir Boleta
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    onClick={openWhatsAppModal}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Contactar Cliente
                   </Button>
                 </div>
               </div>
@@ -512,6 +519,15 @@ export function SalesPage() {
           </div>
         </Modal>
       )}
+
+      {/* WhatsApp Modal */}
+      <WhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={closeWhatsAppModal}
+        storeName={config?.name}
+        defaultPhone={cliente.dni}
+        title="Contactar Cliente por WhatsApp"
+      />
     </div>
   );
 }

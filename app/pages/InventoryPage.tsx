@@ -243,6 +243,7 @@ export function InventoryPage() {
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
+  const [sortBy, setSortBy] = useState<'creation-desc' | 'creation-asc' | 'stock-high' | 'stock-low'>('creation-desc');
 
   useEffect(() => {
     loadData();
@@ -398,16 +399,39 @@ export function InventoryPage() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.productId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.size || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = categoryFilter === 'all' || product.categoryNumber === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = products
+    .filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (product.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           product.productId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (product.size || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = categoryFilter === 'all' || product.categoryNumber === categoryFilter;
+      
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'creation-desc': // Newer first (default) - show most recently created first
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+          // Fallback to array index if createdAt is not available
+          return products.indexOf(a) - products.indexOf(b);
+        case 'creation-asc': // Older first - show oldest created first
+          if (a.createdAt && b.createdAt) {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          }
+          // Fallback to array index if createdAt is not available
+          return products.indexOf(b) - products.indexOf(a);
+        case 'stock-high': // High stock first
+          return b.quantity - a.quantity;
+        case 'stock-low': // Low stock first
+          return a.quantity - b.quantity;
+        default:
+          return 0;
+      }
+    });
 
   const uniqueCategoryNumbers = Array.from(new Set(products.map(p => p.categoryNumber).filter(Boolean))).sort((a, b) => a! - b!);
   const lowStockProducts = products.filter(p => p.quantity <= 5);
@@ -531,7 +555,7 @@ export function InventoryPage() {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Input
             label="Buscar productos"
             value={searchTerm}
@@ -551,6 +575,17 @@ export function InventoryPage() {
                   label: category ? `${catNum} - ${category.name}` : `Categoría ${catNum}` 
                 };
               })
+            ]}
+          />
+          <Select
+            label="Ordenar por"
+            value={sortBy}
+            onChange={(value) => setSortBy(value as typeof sortBy)}
+            options={[
+              { value: 'creation-desc', label: 'Más recientes primero' },
+              { value: 'creation-asc', label: 'Más antiguos primero' },
+              { value: 'stock-high', label: 'Mayor stock primero' },
+              { value: 'stock-low', label: 'Menor stock primero' }
             ]}
           />
           <div className="flex items-end">
@@ -587,7 +622,7 @@ export function InventoryPage() {
                   Categoría
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Talla
+                  Talla y Color
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Precio

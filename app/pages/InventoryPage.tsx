@@ -453,41 +453,45 @@ export function InventoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
             Gestión de Inventario
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             Administra tu catálogo de productos de ropa
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           {/* Excel Operations */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
               onClick={() => setShowExcelImportModal(true)}
-              className="text-sm"
+              className="text-xs md:text-sm"
             >
-              📥 Importar Productos
+              <span className="hidden sm:inline">Importar Productos</span>
+              <span className="sm:hidden">Importar</span>
             </Button>
             <Button
               variant="secondary" 
               onClick={handleDownloadTemplate}
-              className="text-sm"
+              className="text-xs md:text-sm"
             >
-              📋 Plantilla Excel
+              <span className="hidden sm:inline">Plantilla Excel</span>
+              <span className="sm:hidden">Plantilla</span>
             </Button>
             <Button
               variant="secondary"
               onClick={handleExportInventory}
-              className="text-sm"
+              className="text-xs md:text-sm"
             >
-              📤 Exportar Inventario
+              <span className="hidden sm:inline">Exportar Inventario</span>
+              <span className="sm:hidden">Exportar</span>
             </Button>
           </div>
           {/* New Product Button */}
-          <Button onClick={handleCreateProduct}>
-            + Nuevo Producto
+          <Button onClick={handleCreateProduct} className="text-xs md:text-sm">
+            <span className="hidden sm:inline">Nuevo Producto</span>
+            <span className="sm:hidden">Nuevo</span>
           </Button>
         </div>
       </div>

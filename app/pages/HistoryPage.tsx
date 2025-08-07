@@ -11,7 +11,7 @@ import type { Sale } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
 
 export function HistoryPage() {
-  const { saleRepo, markSaleAsInvoiced, configRepo } = useAppContext();
+  const { saleRepo, markSaleAsInvoiced, configRepo, excelService } = useAppContext();
   const [ventas, setVentas] = useState<Sale[]>([]);
   const [filtro, setFiltro] = useState('todas');
   const [config, setConfig] = useState<StoreConfig | null>(null);
@@ -20,6 +20,8 @@ export function HistoryPage() {
   const [ventaSel, setVentaSel] = useState<Sale | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppSale, setWhatsAppSale] = useState<Sale | null>(null);
+  const [confirmingInvoice, setConfirmingInvoice] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Date filtering states
   const [dateFilterType, setDateFilterType] = useState<'all' | 'dateRange' | 'month'>('all');
@@ -125,11 +127,21 @@ export function HistoryPage() {
 
   const handleMarkAsInvoiced = async (saleId: string) => {
     try {
-      await markSaleAsInvoiced.execute(saleId);
+      await markSaleAsInvoiced(saleId);
+      setConfirmingInvoice(null);
       await cargar();
     } catch (error) {
       console.error('Error marking as invoiced:', error);
+      setConfirmingInvoice(null);
     }
+  };
+
+  const confirmMarkAsInvoiced = (saleId: string) => {
+    setConfirmingInvoice(saleId);
+  };
+
+  const cancelConfirmation = () => {
+    setConfirmingInvoice(null);
   };
 
   const openWhatsAppModal = (sale: Sale) => {
@@ -140,6 +152,37 @@ export function HistoryPage() {
   const closeWhatsAppModal = () => {
     setShowWhatsAppModal(false);
     setWhatsAppSale(null);
+  };
+
+  const handleExportExcel = async () => {
+    if (!excelService) {
+      console.error('Excel service not available');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      
+      const filters = {
+        dateFilterType,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        selectedMonth: selectedMonth || undefined,
+        statusFilter: filtro as 'todas' | 'porFacturar' | 'facturadas'
+      };
+
+      await excelService.exportFilteredSales(filters);
+      
+      // Optional: Show success message
+      console.log('Excel export completed successfully');
+      
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      // You could add a toast notification here
+      alert('Error al exportar a Excel. Inténtalo de nuevo.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Helper function to generate month options from sales data
@@ -289,14 +332,34 @@ export function HistoryPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Historial de Ventas
         </h1>
-        {/* Sales Summary */}
-        <div className="text-right">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Total mostrado: {ventasFiltradas.length} venta{ventasFiltradas.length !== 1 ? 's' : ''}
-          </p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">
-            S/ {ventasFiltradas.reduce((sum, venta) => sum + venta.total, 0).toFixed(2)}
-          </p>
+        <div className="flex items-center gap-4">
+          {/* Export Button */}
+          <Button
+            onClick={handleExportExcel}
+            disabled={isExporting || ventasFiltradas.length === 0}
+            className="flex items-center gap-2"
+          >
+            {isExporting ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                Exportar Excel
+              </>
+            )}
+          </Button>
+          
+          {/* Sales Summary */}
+          <div className="text-right">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Total mostrado: {ventasFiltradas.length} venta{ventasFiltradas.length !== 1 ? 's' : ''}
+            </p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              S/ {ventasFiltradas.reduce((sum, venta) => sum + venta.total, 0).toFixed(2)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -453,22 +516,22 @@ export function HistoryPage() {
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-[20%] md:w-[25%]">
                   Cliente
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-[15%] md:w-[18%]">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-[8%] md:w-[7%]">
                   Items
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-[15%] md:w-[15%]">
                   Total
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-[15%] md:w-[12%]">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-[27%] md:w-[23%]">
                   Acciones
                 </th>
               </tr>
@@ -480,60 +543,98 @@ export function HistoryPage() {
                 
                 return (
                   <tr key={venta.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-100">{venta.clientName || 'Cliente anónimo'}</div>
-                      <div className="text-sm text-gray-400">DNI: {venta.clientDni || 'N/A'}</div>
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="text-xs md:text-sm font-medium text-gray-100 truncate max-w-[120px] md:max-w-[180px]" title={venta.clientName || 'Cliente anónimo'}>
+                        {venta.clientName || 'Anónimo'}
+                      </div>
+                      <div className="text-xs text-gray-400 truncate max-w-[120px] md:max-w-[180px]" title={venta.clientDni || 'N/A'}>
+                        {venta.clientDni || 'N/A'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-100">
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="text-xs text-gray-100">
                         {displayDate.split(' ')[0]}
                       </div>
-                      <div className="text-sm text-gray-400">
-                        {displayDate.split(' ')[1]}
+                      <div className="text-xs text-gray-400">
+                        {displayDate.split(' ')[1]?.substring(0, 5)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-100">
-                        {venta.items.length} {venta.items.length === 1 ? 'item' : 'items'}
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-center">
+                      <div className="text-xs md:text-sm text-gray-100">
+                        {venta.items.length}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-100">
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="text-xs md:text-sm font-medium text-gray-100">
                         S/ {venta.total.toFixed(2)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <span className={`inline-flex px-1 md:px-2 py-1 text-xs font-semibold rounded-full ${
                         venta.invoiced 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {venta.invoiced ? 'Facturada' : 'Por Facturar'}
+                        {venta.invoiced ? 'Facturada' : 'Pendiente'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setVentaSel(venta)}
-                      >
-                        Ver Boleta
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => openWhatsAppModal(venta)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        WhatsApp
-                      </Button>
-                      {!venta.invoiced && (
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1 items-center">
                         <Button
                           size="sm"
-                          onClick={() => handleMarkAsInvoiced(venta.id)}
+                          variant="outline"
+                          onClick={() => setVentaSel(venta)}
+                          className="text-xs px-1 md:px-2 py-1"
                         >
-                          Marcar como Facturada
+                          <span className="hidden md:inline">Boleta</span>
+                          <span className="md:hidden">Boleta</span>
                         </Button>
-                      )}
+                        <Button
+                          size="sm"
+                          onClick={() => openWhatsAppModal(venta)}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-1 md:px-2 py-1"
+                        >
+                          <span className="hidden md:inline">WhatsApp</span>
+                          <span className="md:hidden">WhatsApp</span>
+                        </Button>
+                        {!venta.invoiced && (
+                          <div className="flex items-center gap-1">
+                            {confirmingInvoice === venta.id ? (
+                              <>
+                                <div className="text-xs text-gray-300 whitespace-nowrap mr-1">
+                                  <span className="hidden md:inline">¿Confirmar?</span>
+                                  <span className="md:hidden">¿OK?</span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleMarkAsInvoiced(venta.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white text-xs px-1 md:px-2 py-1"
+                                >
+                                  Sí
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={cancelConfirmation}
+                                  className="text-xs px-1 md:px-2 py-1"
+                                >
+                                  No
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => confirmMarkAsInvoiced(venta.id)}
+                                className="text-xs px-1 md:px-2 py-1"
+                              >
+                                <span className="hidden md:inline">Facturar</span>
+                                <span className="md:hidden">Facturar</span>
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

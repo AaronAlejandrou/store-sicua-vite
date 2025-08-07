@@ -56,8 +56,8 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8">
+      <div className="max-w-md w-full space-y-6 md:space-y-8 p-6 md:p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">SICUA Store</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-300">Accede a tu tienda</p>
@@ -92,7 +92,7 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
             Iniciar Sesión
           </Button>
           
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
             <button
               type="button"
               onClick={handleForgotPassword}
@@ -107,7 +107,7 @@ export function LoginPage({ onAuthenticated, onSwitchToRegister }: LoginPageProp
               <button
                 type="button"
                 onClick={onSwitchToRegister}
-                className="text-blue-600 hover:text-blue-500 font-medium underline"
+                className="text-blue-600 hover:text-blue-500 font-medium underline block sm:inline mt-1 sm:mt-0"
               >
                 Registrar nueva tienda
               </button>

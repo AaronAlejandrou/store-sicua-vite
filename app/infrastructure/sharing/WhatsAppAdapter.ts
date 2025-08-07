@@ -61,7 +61,7 @@ export const openWhatsAppChat = (phoneNumber: string, message?: string): void =>
  */
 export const generateDefaultMessage = (storeName?: string): string => {
   if (storeName) {
-    return `¡Hola! Soy de ${storeName}. ¿En qué puedo ayudarte? 😊`;
+    return `Buen día. Soy de ${storeName}. Le envio su comprobante de compra. Muchas gracias.`;
   }
-  return '¡Hola! ¿En qué puedo ayudarte? 😊';
+  return 'Buen día. Le envio su comprobante de compra. Muchas gracias.';
 };

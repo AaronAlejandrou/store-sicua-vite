@@ -1,5 +1,5 @@
 import { HttpClient } from '../http/HttpClient';
-import type { ExcelService, ExcelImportResponse } from '../../domain/services/ExcelService';
+import type { ExcelService, ExcelImportResponse, SalesExportRequest } from '../../domain/services/ExcelService';
 
 export class ExcelApiAdapter implements ExcelService {
   private httpClient: HttpClient;
@@ -34,6 +34,51 @@ export class ExcelApiAdapter implements ExcelService {
     } catch (error) {
       console.error('Error exporting inventory:', error);
       throw new Error('Error exportando inventario');
+    }
+  }
+
+  async exportFilteredSales(filters: SalesExportRequest): Promise<void> {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      queryParams.append('dateFilterType', filters.dateFilterType);
+      queryParams.append('statusFilter', filters.statusFilter);
+      
+      if (filters.startDate) {
+        queryParams.append('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        queryParams.append('endDate', filters.endDate);
+      }
+      if (filters.selectedMonth) {
+        queryParams.append('selectedMonth', filters.selectedMonth);
+      }
+
+      const url = `/sales/excel/export?${queryParams.toString()}`;
+      const blob = await this.httpClient.getBlob(url);
+      
+      // Generate descriptive filename based on filters
+      let filename = 'ventas';
+      
+      if (filters.dateFilterType === 'dateRange' && filters.startDate && filters.endDate) {
+        filename += `_${filters.startDate}_al_${filters.endDate}`;
+      } else if (filters.dateFilterType === 'month' && filters.selectedMonth) {
+        filename += `_${filters.selectedMonth}`;
+      } else if (filters.dateFilterType === 'all') {
+        filename += '_todas';
+      }
+      
+      if (filters.statusFilter !== 'todas') {
+        filename += `_${filters.statusFilter}`;
+      }
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      filename += `_${timestamp}.xlsx`;
+      
+      this.downloadFile(blob, filename);
+    } catch (error) {
+      console.error('Error exporting filtered sales:', error);
+      throw new Error('Error exportando ventas filtradas');
     }
   }
 

@@ -78,15 +78,15 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 py-8">
-      <div className="max-w-lg w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8">
+      <div className="max-w-lg w-full space-y-6 md:space-y-8 p-6 md:p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">SICUA Store</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">Registra tu nueva tienda</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">SICUA Store</h2>
+          <p className="mt-2 text-sm md:text-base text-gray-600 dark:text-gray-300">Registra tu nueva tienda</p>
         </div>
         
-        <form onSubmit={handleRegister} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleRegister} className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Nombre de la tienda *"
               value={formData.storeName}
@@ -122,7 +122,7 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
             helperText="Este email aparecerá en las boletas y será tu usuario de acceso"
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Contraseña *"
               type="password"
@@ -158,7 +158,7 @@ export function RegisterPage({ onRegistered, onSwitchToLogin }: RegisterPageProp
               <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="text-green-600 hover:text-green-500 font-medium underline"
+                className="text-green-600 hover:text-green-500 font-medium underline block sm:inline mt-1 sm:mt-0"
               >
                 Iniciar sesión
               </button>

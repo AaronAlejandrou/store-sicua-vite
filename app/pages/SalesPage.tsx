@@ -287,20 +287,20 @@ export function SalesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva Venta</h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Nueva Venta</h1>
+        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
           Crea boletas y registra ventas
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
         {/* Left Column - Sale Form */}
-        <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Customer Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-              <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-md">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Información del Cliente</h3>
+              <div className="grid grid-cols-1 gap-4">
                 <Input
                   label="DNI/RUC"
                   value={cliente.dni}
@@ -317,127 +317,134 @@ export function SalesPage() {
             </div>
 
             {/* Product Search */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-              <h3 className="text-lg font-semibold mb-4">Agregar Productos</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-md">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Buscar Productos</h3>
               <div className="relative dropdown-container">
                 <Input
-                  label="Buscar por ID o nombre"
+                  label="Buscar por ID o Nombre"
                   value={busqueda}
-                  onChange={(e) => {
-                    setBusqueda(e.target.value);
-                    setShowDropdown(e.target.value.length > 0);
-                    setBusquedaError('');
-                  }}
-                  placeholder="Ej: P001, CAM001, o nombre del producto..."
-                  onFocus={() => busqueda && setShowDropdown(true)}
-                  helperText="Busca principalmente por ID del producto para mayor precisión"
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Escribe para buscar productos..."
+                  onFocus={() => setShowDropdown(true)}
                 />
                 
-                {busquedaError && (
-                  <p className="text-red-500 text-sm mt-1">{busquedaError}</p>
-                )}
-
-                {showDropdown && productosVistas.length > 0 && (
-                  <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-                    {productosVistas.slice(0, 8).map((producto) => (
+                {showDropdown && busqueda.trim() && (
+                  <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {productosVistas.slice(0, 5).map(p => (
                       <div
-                        key={producto.productId}
-                        onClick={() => agregarItem(producto)}
-                        className="p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b last:border-b-0"
+                        key={p.productId}
+                        onClick={() => {
+                          setItems(items => [...items, {
+                            ...p,
+                            ventaPrice: p.price,
+                            ventaQty: 1
+                          }]);
+                          setBusqueda('');
+                          setShowDropdown(false);
+                        }}
+                        className="p-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                       >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium text-blue-600 dark:text-blue-400">ID: {producto.productId}</p>
-                            <p className="font-medium">{producto.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {producto.brand && `${producto.brand} - `}Stock: {producto.quantity}
-                            </p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                              {p.name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              ID: {p.productId} | Stock: {p.quantity} | S/ {p.price.toFixed(2)}
+                            </div>
                           </div>
-                          <span className="text-green-600 font-medium">
-                            S/ {producto.price.toFixed(2)}
-                          </span>
                         </div>
                       </div>
                     ))}
-                    {productosVistas.length > 8 && (
-                      <div className="p-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                        ... y {productosVistas.length - 8} productos más
+                    
+                    {productosVistas.length === 0 && (
+                      <div className="p-3 text-gray-500 dark:text-gray-400 text-center text-sm">
+                        No se encontraron productos
                       </div>
                     )}
-                  </div>
-                )}
-
-                {showDropdown && busqueda && productosVistas.length === 0 && (
-                  <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 p-3 shadow-lg">
-                    <p className="text-gray-500 dark:text-gray-400 text-center">
-                      No se encontraron productos con "{busqueda}"
-                    </p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sale Items */}
-            {items.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Productos en la Venta</h3>
+            {/* Cart/Items Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-md">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Productos a Vender</h3>
+              
+              {items.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">
+                  No hay productos agregados
+                </p>
+              ) : (
                 <div className="space-y-4">
                   {items.map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          ID: {item.productId} | Stock disponible: {item.quantity}
-                        </p>
-                        {item.brand && (
-                          <p className="text-sm text-gray-500 dark:text-gray-500">
-                            Marca: {item.brand}
+                    <div key={`${item.productId}-${idx}`} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                            {item.name}
+                          </h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            ID: {item.productId} | Stock: {item.quantity}
                           </p>
-                        )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setItems(items => items.filter((_, i) => i !== idx))}
+                          className="sm:ml-2 text-red-600 hover:text-red-800 text-sm flex-shrink-0"
+                        >
+                          <span className="sm:hidden">Eliminar</span>
+                          <span className="hidden sm:inline">✕</span>
+                        </button>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          max={item.quantity}
-                          value={item.ventaQty}
-                          onChange={(e) => handleItemChange(idx, 'ventaQty', parseInt(e.target.value) || 1)}
-                          className="w-20"
-                        />
-                        <span className="text-sm">×</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={item.ventaPrice}
-                          onChange={(e) => handleItemChange(idx, 'ventaPrice', parseFloat(e.target.value) || 0)}
-                          className="w-24"
-                        />
-                        <span className="font-medium min-w-20 text-right">
-                          S/ {(item.ventaPrice * item.ventaQty).toFixed(2)}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Cantidad
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            max={item.quantity}
+                            value={item.ventaQty}
+                            onChange={(e) => handleItemChange(idx, 'ventaQty', parseInt(e.target.value) || 1)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Precio (S/)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.ventaPrice}
+                            onChange={(e) => handleItemChange(idx, 'ventaPrice', parseFloat(e.target.value) || 0)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 text-right">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          Subtotal: S/ {(parseFloat(item.ventaPrice.toString()) * parseInt(item.ventaQty.toString())).toFixed(2)}
                         </span>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => quitarItem(idx)}
-                        >
-                          ×
-                        </Button>
                       </div>
                     </div>
                   ))}
                   
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total:</span>
-                      <span className="text-green-600">S/ {subtotal.toFixed(2)}</span>
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        Total: S/ {subtotal.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
@@ -448,9 +455,10 @@ export function SalesPage() {
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
                 {success}
-                <div className="mt-2 flex space-x-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <Button type="button" size="sm" onClick={openPrintModal}>
-                    Ver/Imprimir Boleta
+                    <span className="hidden sm:inline">Ver/Imprimir Boleta</span>
+                    <span className="sm:hidden">Ver Boleta</span>
                   </Button>
                   <Button 
                     type="button" 
@@ -458,38 +466,42 @@ export function SalesPage() {
                     onClick={openWhatsAppModal}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
-                    Contactar Cliente
+                    <span className="hidden sm:inline">Contactar Cliente</span>
+                    <span className="sm:hidden">Contactar</span>
                   </Button>
                 </div>
               </div>
             )}
 
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 type="submit"
                 disabled={items.length === 0}
-                className="flex-1"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
               >
                 Registrar Venta
               </Button>
               <Button
                 type="button"
-                variant="secondary"
                 onClick={openPrintModal}
                 disabled={items.length === 0}
+                className="sm:w-auto bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
               >
-                Vista Previa
+                <span className="hidden sm:inline">Vista Previa</span>
+                <span className="sm:hidden">Vista</span>
               </Button>
             </div>
           </form>
         </div>
 
         {/* Right Column - Receipt Preview */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Vista Previa de Boleta</h3>
+        <div className="space-y-4 md:space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-md">
+            <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Vista Previa de Boleta</h3>
             <div className="border rounded-lg overflow-hidden">
-              {renderBoleta(null)}
+              <div className="scale-75 md:scale-90 lg:scale-100 origin-top transform">
+                {renderBoleta(null)}
+              </div>
             </div>
           </div>
         </div>
@@ -503,18 +515,19 @@ export function SalesPage() {
           title="Vista Previa de Boleta"
         >
           <div className="flex justify-center">
-            <div className="bg-white p-4 border rounded-lg" style={{ width: '80mm', maxWidth: '100%' }}>
+            <div className="bg-white p-3 md:p-4 border rounded-lg max-w-full overflow-x-auto" style={{ width: '80mm', maxWidth: '100%' }}>
               {renderBoleta(lastSale)}
             </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
             <Button variant="secondary" onClick={closePrintModal}>
               Cerrar
             </Button>
             <Button onClick={() => {
-              generateReceiptPDF(lastSale, config);
+              if (lastSale) generateReceiptPDF(lastSale, config);
             }}>
-              Descargar PDF
+              <span className="hidden sm:inline">Descargar PDF</span>
+              <span className="sm:hidden">PDF</span>
             </Button>
           </div>
         </Modal>

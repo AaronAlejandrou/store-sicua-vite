@@ -13,8 +13,9 @@ const getApiBaseUrl = () => {
   }
   
   // In production, call the Railway backend directly
-  //return 'https://store-sicua-back-production.up.railway.app/api';
-  return 'http://localhost:8080/api'; // Fallback for local development
+  return 'https://store-sicua-back-production.up.railway.app/api';
+  // store-sicua-back-production.up.railway.app
+  //return 'http://localhost:8080/api'; // Fallback for local development
 };
 
 export const config = {

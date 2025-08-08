@@ -6,6 +6,7 @@ import { Input } from '../components/UI/Input';
 import { Modal } from '../components/UI/Modal';
 import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { WhatsAppModal } from '../components/UI/WhatsAppModal';
+import { formatUTCDateToLocal } from '../utils/dateUtils';
 import type { Product } from '../domain/entities/Product';
 import type { Sale, SaleItem } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
@@ -32,31 +33,9 @@ export function SalesPage() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Función para formatear fecha como local time
+  // Use the utility function for consistent date formatting
   const formatSaleDate = useCallback((dateString: string): string => {
-    try {
-      // Parse the date string as local time (no timezone conversion)
-      const date = new Date(dateString);
-      
-      if (isNaN(date.getTime())) {
-        console.error('Invalid date string:', dateString);
-        return 'Fecha inválida';
-      }
-      
-      // Format as local time (no timezone specification)
-      return date.toLocaleString('es-PE', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error, dateString);
-      return 'Error en fecha';
-    }
+    return formatUTCDateToLocal(dateString);
   }, []);
 
   const cargar = useCallback(async () => {

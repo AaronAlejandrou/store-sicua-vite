@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { Input } from '../components/UI/Input';
 import { Select } from '../components/UI/Select';
 import { WhatsAppModal } from '../components/UI/WhatsAppModal';
+import { formatUTCDateToLocal, formatDateForExcel, adjustDateRangeForExcel } from '../utils/dateUtils';
 import type { Sale } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
 
@@ -29,31 +30,9 @@ export function HistoryPage() {
   const [endDate, setEndDate] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
 
-  // Función para formatear fecha como local time
+  // Use the utility function for consistent date formatting
   const formatSaleDate = useCallback((dateString: string): string => {
-    try {
-      // Parse the date string as local time (no timezone conversion)
-      const date = new Date(dateString);
-      
-      if (isNaN(date.getTime())) {
-        console.error('Invalid date string:', dateString);
-        return 'Fecha inválida';
-      }
-      
-      // Format as local time (no timezone specification)
-      return date.toLocaleString('es-PE', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error, dateString);
-      return 'Error en fecha';
-    }
+    return formatUTCDateToLocal(dateString);
   }, []);
 
   const cargar = useCallback(async () => {
@@ -163,13 +142,32 @@ export function HistoryPage() {
     try {
       setIsExporting(true);
       
+      // Adjust dates to compensate for backend timezone handling
+      let adjustedStartDate = startDate;
+      let adjustedEndDate = endDate;
+      
+      if (dateFilterType === 'dateRange') {
+        if (startDate) {
+          adjustedStartDate = adjustDateRangeForExcel(startDate, false);
+        }
+        if (endDate) {
+          adjustedEndDate = adjustDateRangeForExcel(endDate, true);
+        }
+        
+        console.log('Date adjustment for Excel export:');
+        console.log('Original dates:', { startDate, endDate });
+        console.log('Adjusted dates:', { adjustedStartDate, adjustedEndDate });
+      }
+      
       const filters = {
         dateFilterType,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        startDate: adjustedStartDate || undefined,
+        endDate: adjustedEndDate || undefined,
         selectedMonth: selectedMonth || undefined,
         statusFilter: filtro as 'todas' | 'porFacturar' | 'facturadas'
       };
+
+      console.log('Exporting with filters:', filters);
 
       await excelService.exportFilteredSales(filters);
       

@@ -7,7 +7,7 @@ import { LoadingSpinner } from '../components/UI/LoadingSpinner';
 import { Input } from '../components/UI/Input';
 import { Select } from '../components/UI/Select';
 import { WhatsAppModal } from '../components/UI/WhatsAppModal';
-import { formatUTCDateToLocal, formatDateForExcel, adjustDateRangeForExcel } from '../utils/dateUtils';
+import { formatUTCDateToLocal } from '../utils/dateUtils';
 import type { Sale } from '../domain/entities/Sale';
 import type { StoreConfig } from '../domain/entities/StoreConfig';
 
@@ -142,27 +142,10 @@ export function HistoryPage() {
     try {
       setIsExporting(true);
       
-      // Adjust dates to compensate for backend timezone handling
-      let adjustedStartDate = startDate;
-      let adjustedEndDate = endDate;
-      
-      if (dateFilterType === 'dateRange') {
-        if (startDate) {
-          adjustedStartDate = adjustDateRangeForExcel(startDate, false);
-        }
-        if (endDate) {
-          adjustedEndDate = adjustDateRangeForExcel(endDate, true);
-        }
-        
-        console.log('Date adjustment for Excel export:');
-        console.log('Original dates:', { startDate, endDate });
-        console.log('Adjusted dates:', { adjustedStartDate, adjustedEndDate });
-      }
-      
       const filters = {
         dateFilterType,
-        startDate: adjustedStartDate || undefined,
-        endDate: adjustedEndDate || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         selectedMonth: selectedMonth || undefined,
         statusFilter: filtro as 'todas' | 'porFacturar' | 'facturadas'
       };
@@ -171,12 +154,10 @@ export function HistoryPage() {
 
       await excelService.exportFilteredSales(filters);
       
-      // Optional: Show success message
       console.log('Excel export completed successfully');
       
     } catch (error) {
       console.error('Error exporting to Excel:', error);
-      // You could add a toast notification here
       alert('Error al exportar a Excel. Inténtalo de nuevo.');
     } finally {
       setIsExporting(false);

@@ -3,23 +3,23 @@
  */
 
 /**
- * Formats a date string from the backend to local time
- * This handles the case where the backend is in UTC but we want to display local time
+ * Formats a date string from the backend for display
+ * The backend sends LocalDateTime which is already in local timezone,
+ * so we parse it as-is without timezone conversion
  */
-export function formatUTCDateToLocal(dateString: string): string {
+export function formatSaleDate(dateString: string): string {
   try {
-    // Force parse as UTC if no timezone info
-    const utcDate = dateString.includes('Z') || dateString.includes('+') || dateString.includes('-', 19)
-      ? new Date(dateString)
-      : new Date(dateString + 'Z');
+    // Parse the date string as-is since backend sends LocalDateTime in local timezone
+    // DO NOT add 'Z' as that would incorrectly treat it as UTC
+    const date = new Date(dateString);
     
-    if (isNaN(utcDate.getTime())) {
+    if (isNaN(date.getTime())) {
       console.error('Invalid date string:', dateString);
       return 'Fecha inválida';
     }
     
-    // Convert to local time
-    return utcDate.toLocaleString('es-PE', {
+    // Format the date (it's already in correct timezone)
+    return date.toLocaleString('es-PE', {
       year: 'numeric',
       month: '2-digit', 
       day: '2-digit',
@@ -29,7 +29,10 @@ export function formatUTCDateToLocal(dateString: string): string {
       hour12: false
     });
   } catch (error) {
-    console.error('Error formatting UTC date:', error, dateString);
+    console.error('Error formatting date:', error, dateString);
     return 'Error en fecha';
   }
 }
+
+// Keep the old function name for backward compatibility
+export const formatUTCDateToLocal = formatSaleDate;

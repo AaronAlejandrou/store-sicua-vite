@@ -66,14 +66,9 @@ export function HistoryPage() {
     let passesDateFilter = true;
     if (dateFilterType !== 'all') {
       try {
-        // Parse the sale date - handle both UTC and local timezone scenarios
-        let saleDate;
-        if (venta.date.includes('T') && !venta.date.includes('+') && !venta.date.includes('Z')) {
-          // If it looks like ISO format but without timezone, treat as local time
-          saleDate = new Date(venta.date);
-        } else {
-          saleDate = new Date(venta.date);
-        }
+        // Parse the sale date as-is since backend sends LocalDateTime in local timezone
+        // DO NOT treat as UTC since backend already stores in local time
+        const saleDate = new Date(venta.date);
         
         if (dateFilterType === 'dateRange') {
           if (startDate) {

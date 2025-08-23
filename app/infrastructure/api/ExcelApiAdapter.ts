@@ -17,8 +17,9 @@ export class ExcelApiAdapter implements ExcelService {
 
   async downloadTemplate(): Promise<void> {
     try {
-      const blob = await this.httpClient.getBlob('/products/excel/template');
-      this.downloadFile(blob, 'plantilla_productos.xlsx');
+      const response = await this.httpClient.getBlobWithHeaders('/products/excel/template');
+      const filename = this.extractFilenameFromHeaders(response.headers) || 'plantilla_productos.xlsx';
+      this.downloadFile(response.blob, filename);
     } catch (error) {
       console.error('Error downloading Excel template:', error);
       throw new Error('Error descargando plantilla de Excel');
@@ -27,10 +28,9 @@ export class ExcelApiAdapter implements ExcelService {
 
   async exportInventory(): Promise<void> {
     try {
-      const blob = await this.httpClient.getBlob('/products/excel/export');
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const filename = `inventario_${timestamp}.xlsx`;
-      this.downloadFile(blob, filename);
+      const response = await this.httpClient.getBlobWithHeaders('/products/excel/export');
+      const filename = this.extractFilenameFromHeaders(response.headers) || 'inventario.xlsx';
+      this.downloadFile(response.blob, filename);
     } catch (error) {
       console.error('Error exporting inventory:', error);
       throw new Error('Error exportando inventario');
@@ -55,31 +55,30 @@ export class ExcelApiAdapter implements ExcelService {
       }
 
       const url = `/sales/excel/export?${queryParams.toString()}`;
-      const blob = await this.httpClient.getBlob(url);
+      const response = await this.httpClient.getBlobWithHeaders(url);
+      const filename = this.extractFilenameFromHeaders(response.headers) || 'ventas.xlsx';
       
-      // Generate descriptive filename based on filters
-      let filename = 'ventas';
-      
-      if (filters.dateFilterType === 'dateRange' && filters.startDate && filters.endDate) {
-        filename += `_${filters.startDate}_al_${filters.endDate}`;
-      } else if (filters.dateFilterType === 'month' && filters.selectedMonth) {
-        filename += `_${filters.selectedMonth}`;
-      } else if (filters.dateFilterType === 'all') {
-        filename += '_todas';
-      }
-      
-      if (filters.statusFilter !== 'todas') {
-        filename += `_${filters.statusFilter}`;
-      }
-      
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      filename += `_${timestamp}.xlsx`;
-      
-      this.downloadFile(blob, filename);
+      this.downloadFile(response.blob, filename);
     } catch (error) {
       console.error('Error exporting filtered sales:', error);
       throw new Error('Error exportando ventas filtradas');
     }
+  }
+
+  private extractFilenameFromHeaders(headers: Headers): string | null {
+    const contentDisposition = headers.get('Content-Disposition');
+    if (!contentDisposition) return null;
+    
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (!filenameMatch) return null;
+    
+    let filename = filenameMatch[1];
+    // Remove quotes if present
+    if (filename.charAt(0) === '"' && filename.charAt(filename.length - 1) === '"') {
+      filename = filename.slice(1, -1);
+    }
+    
+    return filename;
   }
 
   private downloadFile(blob: Blob, filename: string): void {

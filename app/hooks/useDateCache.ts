@@ -11,14 +11,9 @@ export const useDateCache = () => {
     }
     
     try {
-      // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
-      let date;
-      if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
-        // If it looks like ISO format but without timezone, assume it's UTC
-        date = new Date(dateString + 'Z');
-      } else {
-        date = new Date(dateString);
-      }
+      // Parse the date string as-is since backend sends LocalDateTime in local timezone
+      // DO NOT add 'Z' as that would incorrectly treat it as UTC
+      const date = new Date(dateString);
       
       // Verificar que la fecha es válida
       if (isNaN(date.getTime())) {
@@ -36,7 +31,7 @@ export const useDateCache = () => {
         return fallbackDate;
       }
       
-      // Format in local timezone
+      // Format in local timezone (already correct since backend sends local time)
       const formattedDate = date.toLocaleString('es-PE', {
         year: 'numeric',
         month: '2-digit',
@@ -70,14 +65,9 @@ export const useDateCache = () => {
     sales.forEach(sale => {
       if (!newCache.has(sale.id)) {
         try {
-          // Parse the date string and ensure it's treated as UTC if it doesn't have timezone info
-          let date;
-          if (sale.date.includes('T') && !sale.date.includes('+') && !sale.date.includes('Z')) {
-            // If it looks like ISO format but without timezone, assume it's UTC
-            date = new Date(sale.date + 'Z');
-          } else {
-            date = new Date(sale.date);
-          }
+          // Parse the date string as-is since backend sends LocalDateTime in local timezone
+          // DO NOT add 'Z' as that would incorrectly treat it as UTC
+          const date = new Date(sale.date);
           
           if (!isNaN(date.getTime())) {
             const formattedDate = date.toLocaleString('es-PE', {
